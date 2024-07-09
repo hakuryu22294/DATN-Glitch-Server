@@ -1,7 +1,8 @@
+require("dotenv").config();
 const mongoose = require("mongoose");
 const { countConnect } = require("../helpers/check.connect");
-const PASSWORD = "yXdw10aboL0sFcMs";
-const connectString = `mongodb+srv://kaminariryuo:${PASSWORD}@glitch-db.7g41rh4.mongodb.net/?retryWrites=true&w=majority&appName=glitch-db`;
+const { MONGO_URI, MONGODB_PASSWORD } = process.env;
+const connectString = MONGO_URI.replace("<password>", MONGODB_PASSWORD);
 
 class Database {
   constructor() {
