@@ -6,4 +6,10 @@ const getInfoData = ({ fields = [], object = {} }) => {
   return _.pick(object, fields);
 };
 
-module.exports = { getInfoData };
+const asyncHandler = (fn) => (req, res, next) => {
+  return (req, res, next) => {
+    fn(req, res, next).catch(next);
+  };
+};
+
+module.exports = { getInfoData, asyncHandler };

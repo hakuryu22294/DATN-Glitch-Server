@@ -1,13 +1,28 @@
+const { Created, SuccessResponse } = require("../core/success.response");
 const AccessService = require("../services/access.service");
 
 class AccessController {
   signUp = async (req, res, next) => {
-    try {
-      console.log(`signUp:: ${req.body}`);
-      return res.status(201).json(await AccessService.signUp(req.body));
-    } catch (err) {
-      next(err);
-    }
+    new Created({
+      message: "Sign up success",
+      metadata: {
+        shop: await AccessService.signUp(req.body),
+      },
+      options: {
+        limit: 10,
+      },
+    }).send(res);
+  };
+  signIn = async (req, res, next) => {
+    new SuccessResponse({
+      metadata: await AccessService.signIn(req.body),
+    }).send(res);
+  };
+  logout = async (req, res, next) => {
+    new SuccessResponse({
+      message: "Logout success",
+      metadata: await AccessService.logout(req.keyStore),
+    }).send(res);
   };
 }
 
