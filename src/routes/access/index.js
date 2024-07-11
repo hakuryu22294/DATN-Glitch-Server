@@ -9,4 +9,8 @@ accessRouter.post("/shop/sign-in", asyncHandler(AccessController.signIn));
 //authentication
 accessRouter.use(authentication);
 accessRouter.post("/shop/sign-out", asyncHandler(AccessController.logout));
+accessRouter.post(
+  "/shop/refresh-token",
+  asyncHandler(AccessController.handlerRefreshToken)
+);
 module.exports = accessRouter;

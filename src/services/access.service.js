@@ -1,11 +1,12 @@
 const shopSchema = require("../models/shop.schema");
 const bcrypt = require("bcryptjs");
 const KeyService = require("./key.service");
-const { createTokenPair } = require("../auth/authUtils");
+const { createTokenPair, verifyJWT } = require("../auth/authUtils");
 const { getInfoData } = require("../utils");
 const {
   BadRequestError,
   UnauthorizedError,
+  ForbiddenError,
 } = require("../core/error.response");
 const { findByEmail } = require("./shop.service");
 const RoleShop = {
@@ -95,6 +96,45 @@ class AccessService {
   static logout = async (keyStore) => {
     const delKey = await KeyService.removeKeyById(keyStore._id);
     return delKey;
+  };
+
+  //check token used
+  static handlerRefreshToken = async (refreshToken) => {
+    const foundToken = await KeyService.findByRefreshTokenUsed(refreshToken);
+    if (foundToken) {
+      // decode who is ?
+      const { userId, email } = await verifyJWT(
+        refreshToken,
+        foundToken.privateKey
+      );
+      await KeyService.removeKeyById(foundToken._id);
+      throw new ForbiddenError("Something wrong happened !! Please re-login");
+    }
+    const holderToken = await KeyService.findByRefreshToken(refreshToken);
+    if (!holderToken)
+      throw new UnauthorizedError("Shop not registered or invalid token");
+    const { userId, email } = await verifyJWT(
+      refreshToken,
+      holderToken.privateKey
+    );
+    const foundShop = await findByEmail({ email });
+    if (!foundShop)
+      throw new UnauthorizedError("Shop not registered or invalid token");
+
+    // create new token
+    const tokens = await createTokenPair(
+      { userId, email },
+      holderToken.publicKey,
+      holderToken.privateKey
+    );
+    await holderToken.update({
+      $set: { refreshTokenUsed: tokens.refreshToken },
+      $addToSet: { refreshTokenUsed: refreshToken },
+    });
+    return {
+      user: { userId, email },
+      tokens,
+    };
   };
 }
 

@@ -29,5 +29,17 @@ class KeyService {
   static removeKeyById = async (id) => {
     return await keySchema.remove(id);
   };
+
+  static deleteKeyById = async (userId) => {
+    return await keySchema.findByIdAndDelete({ user: userId });
+  };
+
+  static findByRefreshTokenUsed = async (refreshToken) => {
+    return await keySchema.findOne({ refreshTokenUsed: refreshToken }).lean();
+  };
+
+  static findByRefreshToken = async (refreshToken) => {
+    return await keySchema.findOne({ refreshToken }).lean();
+  };
 }
 module.exports = KeyService;
