@@ -40,10 +40,4 @@ const checkPermissionApiKey = (permission) => {
   };
 };
 
-const asyncHandler = (fn) => (req, res, next) => {
-  return (req, res, next) => {
-    fn(req, res, next).catch(next);
-  };
-};
-
-module.exports = { apiKey, checkPermissionApiKey, asyncHandler };
+module.exports = { apiKey, checkPermissionApiKey };
