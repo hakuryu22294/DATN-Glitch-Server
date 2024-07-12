@@ -136,6 +136,7 @@ class AccessService {
       tokens,
     };
   };
+  static searchProducts = async ({ keySearch }) => {};
 }
 
 module.exports = AccessService;

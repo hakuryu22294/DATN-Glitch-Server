@@ -7,6 +7,7 @@ const {
   furniture,
 } = require("../../models/product.schema");
 const { Types } = require("mongoose");
+const { getSelectData, unGetSelectData } = require("../../utils");
 const findAllDraftsForShop = async ({ query, limit, skip }) => {
   return await product
     .find(query)
@@ -19,8 +20,8 @@ const findAllDraftsForShop = async ({ query, limit, skip }) => {
 
 const publishProductByShop = async ({ shop, _id }) => {
   const foundShop = await product.findOne({
-    shop: new Types.ObjectId(shop),
-    _id: new Types.ObjectId(_id),
+    shop: Types.ObjectId(shop),
+    _id: Types.ObjectId(_id),
   });
   if (!foundShop) return null;
   foundShop.isDraft = false;
@@ -29,4 +30,75 @@ const publishProductByShop = async ({ shop, _id }) => {
   return modifiedCount;
 };
 
-module.exports = { findAllDraftsForShop, publishProductByShop };
+const unPublishproductByShop = async ({ shop, _id }) => {
+  const foundShop = await product.findOne({
+    shop: Types.ObjectId(shop),
+    _id: Types.ObjectId(_id),
+  });
+  if (!foundShop) return null;
+  foundShop.isDraft = true;
+  foundShop.isPublished = false;
+  const { modifiedCount } = await foundShop.update(foundShop);
+  return modifiedCount;
+};
+
+const searchProductsByUser = async ({ keySearch }) => {
+  const regex = new RegExp(keySearch);
+  const result = await product
+    .find({
+      isDraft: false,
+      $text: {
+        $search: regex,
+      },
+
+      score: {
+        $meta: "textScore",
+      },
+    })
+    .sort({
+      score: {
+        $meta: "textScore",
+      },
+    })
+    .lean();
+
+  return result;
+};
+
+const findAllProducts = async ({ limit, sort, page, filter, select }) => {
+  const skip = (page - 1) * limit;
+  const sortBy = sort === "ctime" ? { _id: -1 } : { _id: 1 };
+  const products = await product
+    .find(filter)
+    .skip(skip)
+    .limit(limit)
+    .select(getSelectData(select))
+    .sort(sortBy)
+    .lean();
+  return products;
+};
+
+const findProduct = async ({ _id, unSelect }) => {
+  return await product.findById(_id).select(unGetSelectData(unSelect)).lean();
+};
+
+const updateProductById = async ({
+  productId,
+  bodyUpdate,
+  model,
+  isNew = true,
+}) => {
+  return await model
+    .findByIdAndUpdate(productId, bodyUpdate, { new: isNew })
+    .lean();
+};
+
+module.exports = {
+  findAllDraftsForShop,
+  publishProductByShop,
+  unPublishproductByShop,
+  searchProductsByUser,
+  findAllProducts,
+  findProduct,
+  updateProductById,
+};
