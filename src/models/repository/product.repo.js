@@ -7,7 +7,11 @@ const {
   furniture,
 } = require("../../models/product.schema");
 const { Types } = require("mongoose");
-const { getSelectData, unGetSelectData } = require("../../utils");
+const {
+  getSelectData,
+  unGetSelectData,
+  convertToObjectId,
+} = require("../../utils");
 const findAllDraftsForShop = async ({ query, limit, skip }) => {
   return await product
     .find(query)
@@ -93,6 +97,25 @@ const updateProductById = async ({
     .lean();
 };
 
+const getProductById = async (productId) => {
+  return await product.findById({ _id: convertToObjectId(productId) }).lean();
+};
+
+const checkProductByServer = async (products) => {
+  return await Promise.all(
+    products.map(async (product) => {
+      const foundProduct = await getProductById(product._id);
+      if (foundProduct) {
+        return {
+          price: foundProduct.price,
+          quantity: foundProduct.quantity,
+          _id: foundProduct._id,
+        };
+      }
+    })
+  );
+};
+
 module.exports = {
   findAllDraftsForShop,
   publishProductByShop,
@@ -101,4 +124,6 @@ module.exports = {
   findAllProducts,
   findProduct,
   updateProductById,
+  getProductById,
+  checkProductByServer,
 };

@@ -1,5 +1,5 @@
 const { BadRequestError } = require("../core/error.response");
-const { Inventory } = require("../models/inventory");
+const { Inventory } = require("../models/inventory.shema");
 const {
   product,
   clothing,
@@ -65,7 +65,7 @@ class ProductFactory {
       sort,
       page,
       filter,
-      select: ["thumb", "name", "price"],
+      select: ["thumb", "name", "price", "shop"],
     });
   }
   static async findProduct({ _id }) {

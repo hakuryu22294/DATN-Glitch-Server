@@ -13,7 +13,6 @@ const { findAllProducts } = require("../models/repository/product.repo");
 const { convertToObjectId } = require("../utils");
 const {
   findAllDiscountCodeUnSelect,
-  findAllDiscountCodeSelect,
   checkDiscountExists,
 } = require("../models/repository/discount.repo");
 
@@ -34,7 +33,7 @@ class DiscountService {
       usesCount,
       appliesTo,
     } = payload;
-    if (new Date() < new Date(startDate) || new Date() > new Date(endDate)) {
+    if (new Date() > new Date(endDate)) {
       throw new BadRequestError("Invalid date");
     }
     if (new Date(startDate) >= new Date(endDate)) {
@@ -108,6 +107,8 @@ class DiscountService {
       unSelect: ["__v", "shop"],
       model: Discount,
     });
+
+    return discounts;
   }
   static async getDiscountAmount({ codeId, userId, shopId, products }) {
     const foundDiscount = await checkDiscountExists({
@@ -157,6 +158,34 @@ class DiscountService {
       discount: amount,
       totalPrice: totalOrder - amount,
     };
+  }
+  static async deleteDiscountCode({ codeId, shopId }) {
+    const deleted = await Discount.findOneAndDelete({
+      code: codeId,
+      shop: convertToObjectId(shopId),
+    });
+    return deleted;
+  }
+
+  static async cancelDiscountCode({ codeId, shopId, userId }) {
+    const foundDiscount = await checkDiscountExists({
+      model: Discount,
+      filter: {
+        code: codeId,
+        shop: convertToObjectId(shopId),
+      },
+    });
+    if (!foundDiscount) throw new NotFoundError("Discount does not exist");
+
+    const result = await Discount.findByIdAndUpdate(foundDiscount._id, {
+      $pull: { userUsed: convertToObjectId(userId) },
+      $inc: {
+        maxUses: 1,
+        usesCount: -1,
+      },
+    });
+
+    return result;
   }
 }
 

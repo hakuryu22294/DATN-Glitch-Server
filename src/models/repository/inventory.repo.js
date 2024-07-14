@@ -1,4 +1,5 @@
-const { Inventory } = require("../inventory");
+const { convertToObjectId } = require("../../utils");
+const { Inventory } = require("../inventory.shema");
 
 const insertInventory = async ({
   productId,
@@ -14,6 +15,32 @@ const insertInventory = async ({
   });
 };
 
+const reservationInventory = async ({ productId, quantity, cartId }) => {
+  const query = {
+      product: convertToObjectId(productId),
+      stock: { $gte: quantity },
+    },
+    updateSet = {
+      $inc: {
+        stock: -quantity,
+      },
+      $push: {
+        reservation: {
+          quantity,
+          cartId,
+          createOn: new Date(),
+        },
+      },
+    },
+    options = {
+      upsert: true,
+      new: true,
+    };
+
+  return await Inventory.updateOne(query, updateSet, options);
+};
+
 module.exports = {
   insertInventory,
+  reservationInventory,
 };
