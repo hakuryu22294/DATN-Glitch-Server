@@ -1,0 +1,25 @@
+const { SuccessResponse } = require("../core/success.response");
+const CommentService = require("../services/comment.service");
+
+class CommentController {
+  createComment = async (req, res, next) => {
+    new SuccessResponse({
+      message: "Create comment successfully",
+      metadata: await CommentService.createComment(req.body),
+    }).send(res);
+  };
+  deleteComents = async (req, res, next) => {
+    new SuccessResponse({
+      message: "Delete comment successfully",
+      metadata: await CommentService.deleteComments(req.body),
+    }).send(res);
+  };
+  getCommentsByParentId = async (req, res, next) => {
+    new SuccessResponse({
+      message: "Get comment successfully",
+      metadata: await CommentService.getCommentByParentId(req.query),
+    }).send(res);
+  };
+}
+
+module.exports = new CommentController();

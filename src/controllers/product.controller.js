@@ -20,6 +20,7 @@ class ProductController {
       }),
     }).send(res);
   };
+
   //query
   /**
    * @desc Get all draft
