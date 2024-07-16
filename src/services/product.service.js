@@ -18,6 +18,7 @@ const {
   updateProductById,
 } = require("../models/repository/product.repo");
 const { removeUndifined, updateNestedObjectParser } = require("../utils");
+const { pushNotiToSystem } = require("./notification.service");
 
 //define base product
 class ProductFactory {
@@ -106,6 +107,18 @@ class Product {
         shopId: this.shop,
         stock: this.quantity,
       });
+      //push noti to system
+      pushNotiToSystem({
+        type: "SHOP-001",
+        receiverId: 1,
+        senderId: this.shop,
+        options: {
+          product_name: this.name,
+          shop_name: this.shop,
+        },
+      })
+        .then((rs) => console.log(rs))
+        .catch((err) => console.log(err));
     }
   }
   async updateProduct(productId, bodyUpdate) {
