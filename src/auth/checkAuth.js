@@ -2,11 +2,12 @@ const { findById } = require("../services/apiKey.service");
 
 const HEADER = {
   API_KEY: "x-api-key",
+  CLIENT_ID: "x-client-id",
   AUTHORIZATION: "authorization",
 };
 const apiKey = async (req, res, next) => {
   try {
-    const key = req.headers[HEADER.API_KEY?.toString()];
+    const key = req.headers[HEADER.API_KEY]?.toString();
     if (!key) {
       return res.status(403).json({
         message: "Forbidden Error",
@@ -21,7 +22,9 @@ const apiKey = async (req, res, next) => {
     }
     req.objKey = objKey;
     return next();
-  } catch (error) {}
+  } catch (error) {
+    console.log(error);
+  }
 };
 const checkPermissionApiKey = (permission) => {
   return (req, res, next) => {

@@ -1,10 +1,10 @@
-const { Schema, model } = require("mongoose");
+const { Schema, model, Types } = require("mongoose");
 const DOCUMENT_NAME = "Key";
 const COLLECTION_NAME = "Keys";
 const keyTokenSchema = new Schema(
   {
     user: {
-      type: Schema.Types.ObjectId,
+      type: Types.ObjectId,
       required: true,
       ref: "Shop",
     },

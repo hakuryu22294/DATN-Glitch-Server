@@ -1,4 +1,3 @@
-const { min } = require("lodash");
 const { model, Schema, Types } = require("mongoose");
 const slugify = require("slugify");
 
@@ -32,7 +31,7 @@ const productSchema = new Schema(
     type: {
       type: String,
       required: true,
-      enum: ["Electronic", "Clothing", "Book", "Toy", "Funiture", "Others"],
+      enum: ["electronic", "clothing", "book", "toy", "furniture", "others"],
       shop: String,
     },
     variations: {
@@ -98,24 +97,36 @@ const clothingSchema = new Schema(
     timestamps: true,
   }
 );
-const bookSchema = new Schema({
-  author: {
-    type: String,
-    required: true,
+const bookSchema = new Schema(
+  {
+    author: {
+      type: String,
+      required: true,
+    },
+    publisher: String,
+    year: String,
   },
-  publisher: String,
-  year: Number,
-});
+  {
+    timestamps: true,
+    collection: "Book",
+  }
+);
 
-const toySchema = new Schema({
-  brand: {
-    type: String,
-    required: true,
+const toySchema = new Schema(
+  {
+    brand: {
+      type: String,
+      required: true,
+    },
+    dimension: String,
+    weight: String,
+    color: String,
   },
-  dimension: String,
-  weight: String,
-  color: String,
-});
+  {
+    timestamps: true,
+    collection: "Toy",
+  }
+);
 
 const electronicSchema = new Schema(
   {
@@ -127,20 +138,26 @@ const electronicSchema = new Schema(
     color: String,
   },
   {
-    collation: "Clothes",
     timestamps: true,
+    collection: "Electronic",
   }
 );
 
-const furnitureSchema = new Schema({
-  brand: {
-    type: String,
-    required: true,
+const furnitureSchema = new Schema(
+  {
+    brand: {
+      type: String,
+      required: true,
+    },
+    dimension: String,
+    material: String,
+    color: String,
   },
-  dimension: String,
-  material: String,
-  color: String,
-});
+  {
+    timestamps: true,
+    collection: "Funiture",
+  }
+);
 
 module.exports = {
   product: model(DOCUMENT_NAME, productSchema),

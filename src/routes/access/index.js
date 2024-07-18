@@ -3,7 +3,6 @@ const AccessController = require("../../controllers/access.controller");
 const { asyncHandler } = require("../../helpers/asyncHandler");
 const { authentication } = require("../../auth/authUtils");
 const accessRouter = Router();
-
 accessRouter.post("/shop/sign-up", asyncHandler(AccessController.signUp));
 accessRouter.post("/shop/sign-in", asyncHandler(AccessController.signIn));
 //authentication

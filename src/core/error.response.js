@@ -21,45 +21,45 @@ class ErrorResponse extends Error {
 }
 
 class ConflictRequestError extends ErrorResponse {
-  constructor(message, statusCode) {
-    super(
-      (message = ReasonStatusCode.CONFLICT),
-      (statusCode = StatusCode.CONFLICT)
-    );
+  constructor(
+    message = ReasonStatusCode.CONFLICT,
+    statusCode = StatusCode.CONFLICT
+  ) {
+    super(message, statusCode);
   }
 }
 class BadRequestError extends ErrorResponse {
-  constructor(message, statusCode) {
-    super(
-      (message = ReasonStatusCode.BAD_REQUEST),
-      (statusCode = StatusCode.BAD_REQUEST)
-    );
+  constructor(
+    message = ReasonStatusCode.BAD_REQUEST,
+    statusCode = StatusCode.BAD_REQUEST
+  ) {
+    super(message, statusCode);
   }
 }
 
 class ForbiddenError extends ErrorResponse {
-  constructor(message, statusCode) {
-    super(
-      (message = ReasonStatusCode.FORBIDDEN),
-      (statusCode = StatusCode.FORBIDDEN)
-    );
+  constructor(
+    message = ReasonStatusCode.FORBIDDEN,
+    statusCode = StatusCode.FORBIDDEN
+  ) {
+    super(message, statusCode);
   }
 }
 class UnauthorizedError extends ErrorResponse {
-  constructor(message, statusCode) {
-    super(
-      (message = ReasonStatusCode.UNAUTHORIZED),
-      (statusCode = StatusCode.UNAUTHORIZED)
-    );
+  constructor(
+    message = ReasonStatusCode.UNAUTHORIZED,
+    statusCode = StatusCode.UNAUTHORIZED
+  ) {
+    super(message, statusCode);
   }
 }
 
 class NotFoundError extends ErrorResponse {
-  constructor(message, statusCode) {
-    super(
-      (message = ReasonStatusCode.NOT_FOUND),
-      (statusCode = StatusCode.NOT_FOUND)
-    );
+  constructor(
+    message = ReasonStatusCode.NOT_FOUND,
+    statusCode = StatusCode.NOT_FOUND
+  ) {
+    super(message, statusCode);
   }
 }
 

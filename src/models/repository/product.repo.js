@@ -1,36 +1,37 @@
-const {
-  product,
-  electronic,
-  clothing,
-  book,
-  toy,
-  furniture,
-} = require("../../models/product.schema");
+const { product } = require("../../models/product.schema");
 const { Types } = require("mongoose");
 const {
   getSelectData,
   unGetSelectData,
   convertToObjectId,
 } = require("../../utils");
-const findAllDraftsForShop = async ({ query, limit, skip }) => {
+
+const queryProduct = async ({ query, limit, skip }) => {
   return await product
     .find(query)
     .populate("shop", "name email -_id")
-    .sort({ updateAt: -1 })
     .skip(skip)
     .limit(limit)
-    .lean();
+    .lean()
+    .exec();
+};
+const findAllDraftsForShop = async ({ query, limit, skip }) => {
+  return await queryProduct({ query, limit, skip });
+};
+
+const findAllPublishForShop = async ({ query, limit, skip }) => {
+  return await queryProduct({ query, limit, skip });
 };
 
 const publishProductByShop = async ({ shop, _id }) => {
   const foundShop = await product.findOne({
-    shop: Types.ObjectId(shop),
-    _id: Types.ObjectId(_id),
+    shop: new Types.ObjectId(shop),
+    _id: new Types.ObjectId(_id),
   });
   if (!foundShop) return null;
   foundShop.isDraft = false;
   foundShop.isPublished = true;
-  const { modifiedCount } = await foundShop.update(foundShop);
+  const { modifiedCount } = await foundShop.updateOne(foundShop);
   return modifiedCount;
 };
 
@@ -49,16 +50,19 @@ const unPublishproductByShop = async ({ shop, _id }) => {
 const searchProductsByUser = async ({ keySearch }) => {
   const regex = new RegExp(keySearch);
   const result = await product
-    .find({
-      isDraft: false,
-      $text: {
-        $search: regex,
+    .find(
+      {
+        isDraft: false,
+        $text: {
+          $search: regex,
+        },
       },
-
-      score: {
-        $meta: "textScore",
-      },
-    })
+      {
+        score: {
+          $meta: "textScore",
+        },
+      }
+    )
     .sort({
       score: {
         $meta: "textScore",
@@ -126,4 +130,5 @@ module.exports = {
   updateProductById,
   getProductById,
   checkProductByServer,
+  findAllPublishForShop,
 };

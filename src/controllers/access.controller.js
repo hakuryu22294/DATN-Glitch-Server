@@ -15,6 +15,7 @@ class AccessController {
   };
   signIn = async (req, res, next) => {
     new SuccessResponse({
+      message: "Sign in success",
       metadata: await AccessService.signIn(req.body),
     }).send(res);
   };
@@ -27,7 +28,11 @@ class AccessController {
   handlerRefreshToken = async (req, res, next) => {
     new SuccessResponse({
       message: "Refresh token success",
-      metadata: await AccessService.handlerRefreshToken(req.body.refreshToken),
+      metadata: await AccessService.handlerRefreshToken({
+        refreshToken: req.refreshToken,
+        user: req.user,
+        keyStore: req.keyStore,
+      }),
     }).send(res);
   };
 }

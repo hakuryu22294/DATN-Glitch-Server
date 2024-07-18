@@ -11,6 +11,7 @@ const {
 const { insertInventory } = require("../models/repository/inventory.repo");
 const {
   findAllDraftsForShop,
+  findAllPublishForShop,
   publishProductByShop,
   searchProductsByUser,
   findAllProducts,
@@ -46,9 +47,9 @@ class ProductFactory {
   }
 
   //query
-  static async findAllDraftsForShop({ shop, limit = 50, skip = 0 }) {
-    const query = { shop, isDraft: true };
-    return await findAllDraftsForShop({ query, limit, skip });
+  static async findAllPublishForShop({ shop, limit = 50, skip = 0 }) {
+    const query = { shop, isPublished: true };
+    return await findAllPublishForShop({ query, limit, skip });
   }
   static async searchProducts({ keySearch }) {
     return await searchProductsByUser({ keySearch });
@@ -66,7 +67,7 @@ class ProductFactory {
       sort,
       page,
       filter,
-      select: ["thumb", "name", "price", "shop"],
+      select: ["thumb", "name", "price", "shop", "ratingAverage", "quantity"],
     });
   }
   static async findProduct({ _id }) {
@@ -102,24 +103,25 @@ class Product {
   async createProduct(id) {
     const newProduct = await product.create({ ...this, _id: id });
     if (newProduct) {
-      await insertInventory({
-        productId: newProduct._id,
-        shopId: this.shop,
-        stock: this.quantity,
-      });
+      // await insertInventory({
+      //   productId: newProduct._id,
+      //   shopId: this.shop,
+      //   stock: this.quantity,
+      // });
       //push noti to system
-      pushNotiToSystem({
-        type: "SHOP-001",
-        receiverId: 1,
-        senderId: this.shop,
-        options: {
-          product_name: this.name,
-          shop_name: this.shop,
-        },
-      })
-        .then((rs) => console.log(rs))
-        .catch((err) => console.log(err));
+      // pushNotiToSystem({
+      //   type: "SHOP-001",
+      //   receiverId: 1,
+      //   senderId: this.shop,
+      //   options: {
+      //     product_name: this.name,
+      //     shop_name: this.shop,
+      //   },
+      // })
+      //   .then((rs) => console.log(rs))
+      //   .catch((err) => console.log(err));
     }
+    return newProduct;
   }
   async updateProduct(productId, bodyUpdate) {
     return await updateProductById({
@@ -170,10 +172,12 @@ class Electronic extends Product {
       ...this.attributes,
       shop: this.shop,
     });
+    console.log(newElectronic);
     if (!newElectronic) {
       throw new BadRequestError("Can not create product electronic");
     }
     const newProduct = await super.createProduct(newElectronic._id);
+    console.log(newProduct);
     if (!newProduct) {
       throw new BadRequestError("Can not create product");
     }
@@ -191,6 +195,7 @@ class Book extends Product {
       throw new BadRequestError("Can not create product book");
     }
     const newProduct = await super.createProduct(newBook._id);
+    console.log(newProduct);
     if (!newProduct) {
       throw new BadRequestError("Can not create product");
     }
@@ -232,10 +237,10 @@ class Furniture extends Product {
   }
 }
 //register product type
-ProductFactory.registerProductType("Clothing", Clothing);
-ProductFactory.registerProductType("Electronic", Electronic);
-ProductFactory.registerProductType("Book", Book);
-ProductFactory.registerProductType("Toy", Toy);
-ProductFactory.registerProductType("Furniture", Furniture);
+ProductFactory.registerProductType("clothing", Clothing);
+ProductFactory.registerProductType("electronic", Electronic);
+ProductFactory.registerProductType("book", Book);
+ProductFactory.registerProductType("toy", Toy);
+ProductFactory.registerProductType("furniture", Furniture);
 
 module.exports = ProductFactory;

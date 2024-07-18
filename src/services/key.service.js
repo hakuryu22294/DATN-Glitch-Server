@@ -2,32 +2,33 @@ const keySchema = require("../models/key.schema");
 const Types = require("mongoose");
 
 class KeyService {
-  static createKeyToken = async ({ userId, publicKey, privateKey }) => {
+  static createKeyToken = async ({
+    userId,
+    publicKey,
+    privateKey,
+    refreshToken,
+  }) => {
     try {
-      // const tokens = await keySchema.create({
-      //   user: userId,
-      //   publicKey,
-      //   privateKey,
-      // });
       const filter = { user: userId },
         update = {
           publicKey,
           privateKey,
           refreshTokenUsed: [],
-          refeshToken,
+          refreshToken,
         },
         options = { upsert: true, new: true };
-      const tokens = await keySchema.findByIdAndUpdate(filter, update, options);
+      const tokens = await keySchema.findOneAndUpdate(filter, update, options);
+      console.log(tokens);
       return tokens ? tokens.publicKey : null;
     } catch (err) {
       return err;
     }
   };
   static findByUserId = async (userId) => {
-    return await keySchema.findOne({ user: Types.ObjectId(userId) }).lean();
+    return await keySchema.findOne({ user: userId }).lean();
   };
   static removeKeyById = async (id) => {
-    return await keySchema.remove(id);
+    return await keySchema.deleteOne(id);
   };
 
   static deleteKeyById = async (userId) => {
@@ -39,7 +40,7 @@ class KeyService {
   };
 
   static findByRefreshToken = async (refreshToken) => {
-    return await keySchema.findOne({ refreshToken }).lean();
+    return await keySchema.findOne({ refreshToken });
   };
 }
 module.exports = KeyService;
