@@ -15,10 +15,14 @@ class ProductController {
   updateProduct = async (req, res, next) => {
     new SuccessResponse({
       message: "Update product successfully",
-      metadata: await ProductService.updateProduct(req.body.type, {
-        ...req.body,
-        shop: req.user.userId,
-      }),
+      metadata: await ProductService.updateProduct(
+        req.body.type,
+        req.params.id,
+        {
+          ...req.body,
+          shop: req.user.userId,
+        }
+      ),
     }).send(res);
   };
 
@@ -60,7 +64,7 @@ class ProductController {
   unPublishProductByShop = async (req, res, next) => {
     new SuccessResponse({
       message: "Unpublish product successfully",
-      metadata: await ProductService.findAllPublishForShop({
+      metadata: await ProductService.unPublishProductByShop({
         _id: req.params.id,
         shop: req.user.userId,
       }),

@@ -32,6 +32,8 @@ class DiscountService {
       maxUses,
       usesCount,
       appliesTo,
+      maxUsesPerUser,
+      type,
     } = payload;
     if (new Date() > new Date(endDate)) {
       throw new BadRequestError("Invalid date");
@@ -48,18 +50,21 @@ class DiscountService {
     }
     const newDiscount = await Discount.create({
       code,
-      startDate,
-      endDate,
+
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
       isActive,
+      type: type || "fixed_amount",
       shop: convertToObjectId(shop),
       minOrderValue,
-      applicabeProducts: (appliesTo = "all" ? [] : applicabeProducts),
+      applicabeProducts: appliesTo === "all" ? [] : applicabeProducts,
       name,
       description,
       value,
       maxUses,
       usesCount,
       appliesTo,
+      maxUsesPerUser,
     });
 
     return newDiscount;
@@ -88,12 +93,22 @@ class DiscountService {
         page: +page,
         sort: "ctime",
         select: ["name"],
-        filter: { _id: { $in: applicabeProducts }, isPublished: true },
+        filter: { shop: convertToObjectId(shopId), isPublished: true },
       });
-    } else if (appliesTo === "specific") {
-      //get product applies
     }
-
+    //get product applies
+    if (appliesTo === "specific") {
+      products = await findAllProducts({
+        limit: +limit,
+        page: +page,
+        sort: "ctime",
+        select: ["name"],
+        filter: {
+          _id: { $in: applicabeProducts },
+          isPublished: true,
+        },
+      });
+    }
     return products;
   }
   static async getAllDiscountByShop({ shopId, limit, page }) {
@@ -127,10 +142,11 @@ class DiscountService {
       minOrderValue,
       userUsed,
       type,
+      maxUsesPerUser,
     } = foundDiscount;
     if (!isActive) throw new BadRequestError("Discount code not active");
     if (!maxUses) throw new BadRequestError("Discount are out of uses");
-    if (new Date() < new Date(startDate) || new Date() > new Date(endDate))
+    if (new Date() > new Date(endDate))
       throw new BadRequestError("Discount code expired");
     let totalOrder = 0;
     if (minOrderValue > 0) {
@@ -152,7 +168,7 @@ class DiscountService {
     const amount =
       type === "fixed_amount"
         ? foundDiscount.value
-        : totalOrder * (value / 100);
+        : totalOrder * (foundDiscount.value / 100);
     return {
       totalOrder,
       discount: amount,

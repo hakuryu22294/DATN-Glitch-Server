@@ -23,17 +23,19 @@ const removeUndifined = (object = {}) => {
 
 const updateNestedObjectParser = (obj) => {
   const final = {};
-  Object.keys(obj).forEach((k) => {
+  Object.keys(obj || {}).forEach((k) => {
     if (typeof obj[k] === "object" && !Array.isArray(obj[k])) {
       const response = updateNestedObjectParser(obj[k]);
 
       Object.keys(response).forEach((a) => {
+        console.log(a);
         final[k + "." + a] = response[a];
       });
     } else {
       final[k] = obj[k];
     }
   });
+  console.log(final);
   return final;
 };
 

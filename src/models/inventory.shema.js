@@ -11,10 +11,10 @@ const inventorySchema = new Schema(
     location: {
       type: String,
       default: "unknow",
-      stock: {
-        type: Number,
-        required: true,
-      },
+    },
+    stock: {
+      type: Number,
+      required: true,
     },
     shop: {
       type: Types.ObjectId,

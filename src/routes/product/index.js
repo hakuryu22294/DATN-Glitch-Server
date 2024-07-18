@@ -17,7 +17,10 @@ productRouter.post(
   "/published/:id",
   asyncHandler(ProductController.publishProductByShop)
 );
-productRouter.patch("/:id", asyncHandler(ProductController.updateProduct));
+productRouter.patch(
+  "/update/:id",
+  asyncHandler(ProductController.updateProduct)
+);
 productRouter.post(
   "/unpublished/:id",
   asyncHandler(ProductController.unPublishProductByShop)

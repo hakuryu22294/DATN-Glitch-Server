@@ -8,7 +8,7 @@ class DiscountController {
         ...req.body,
         shop: req.user.userId,
       }),
-    });
+    }).send(res);
   };
   getAllDiscountCode = async (req, res, next) => {
     new SuccessResponse({
@@ -17,7 +17,7 @@ class DiscountController {
         ...req.query,
         shop: req.user.userId,
       }),
-    });
+    }).send(res);
   };
   getDiscountAmount = async (req, res, next) => {
     new SuccessResponse({
@@ -25,7 +25,7 @@ class DiscountController {
       metadata: await DiscountService.getDiscountAmount({
         ...req.body,
       }),
-    });
+    }).send(res);
   };
   getAllDiscountCodesWithProduct = async (req, res, next) => {
     new SuccessResponse({
@@ -33,7 +33,7 @@ class DiscountController {
       metadata: await DiscountService.getAllDisCountCodesWithProduct({
         ...req.query,
       }),
-    });
+    }).send(res);
   };
 }
 

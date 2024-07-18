@@ -53,11 +53,9 @@ const authentication = asyncHandler(async (req, res, next) => {
     try {
       const refreshToken = req.headers[HEADER.REFRESHTOKEN];
       const decodeUser = JWT.verify(refreshToken, keyStore.privateKey);
-      console.log(decodeUser);
       req.user = decodeUser;
       req.refreshToken = refreshToken;
       req.keyStore = keyStore;
-      console.log(refreshToken);
       return next();
     } catch (err) {}
   }

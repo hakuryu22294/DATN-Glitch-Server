@@ -1,3 +1,5 @@
+"use strict";
+
 const { product } = require("../../models/product.schema");
 const { Types } = require("mongoose");
 const {
@@ -37,13 +39,13 @@ const publishProductByShop = async ({ shop, _id }) => {
 
 const unPublishproductByShop = async ({ shop, _id }) => {
   const foundShop = await product.findOne({
-    shop: Types.ObjectId(shop),
-    _id: Types.ObjectId(_id),
+    shop: new Types.ObjectId(shop),
+    _id: new Types.ObjectId(_id),
   });
   if (!foundShop) return null;
   foundShop.isDraft = true;
   foundShop.isPublished = false;
-  const { modifiedCount } = await foundShop.update(foundShop);
+  const { modifiedCount } = await foundShop.updateOne(foundShop);
   return modifiedCount;
 };
 
@@ -90,15 +92,10 @@ const findProduct = async ({ _id, unSelect }) => {
   return await product.findById(_id).select(unGetSelectData(unSelect)).lean();
 };
 
-const updateProductById = async ({
-  productId,
-  bodyUpdate,
-  model,
-  isNew = true,
-}) => {
-  return await model
-    .findByIdAndUpdate(productId, bodyUpdate, { new: isNew })
-    .lean();
+const updateProductById = async ({ productId, bodyUpdate, model }) => {
+  return await model.findByIdAndUpdate({ _id: productId }, bodyUpdate, {
+    new: true,
+  });
 };
 
 const getProductById = async (productId) => {
