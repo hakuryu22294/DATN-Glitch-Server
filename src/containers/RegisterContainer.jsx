@@ -17,7 +17,7 @@ const RegisterContainer = () => {
         },
         validationSchema: validationRegister, 
         onSubmit: async (values) => {
-                const data = await UserService.RegisterAccount(values);
+                const data = await UserService.RegisterAccountUser(values);
                 if (!data) {
                     return;
                 }
