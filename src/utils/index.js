@@ -43,6 +43,13 @@ const convertToObjectId = (id) => {
   return new Types.ObjectId(id);
 };
 
+const replaceHolder = (template, params) => {
+  Object.keys(params).forEach((key) => {
+    const placeHolder = `{{${key}}}`;
+    template = template.replace(new RegExp(placeHolder, "g"), params[key]);
+  });
+};
+
 module.exports = {
   getInfoData,
   getSelectData,
@@ -50,4 +57,5 @@ module.exports = {
   removeUndifined,
   updateNestedObjectParser,
   convertToObjectId,
+  replaceHolder,
 };

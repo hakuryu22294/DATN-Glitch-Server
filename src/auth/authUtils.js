@@ -6,7 +6,6 @@ const HEADER = {
   API_KEY: "x-api-key",
   CLIENT_ID: "x-client-id",
   AUTHORIZATION: "authorization",
-  REFRESHTOKEN: "x-refresh-token",
 };
 const createTokenPair = async (payload, publicKey, privateKey) => {
   try {
@@ -17,13 +16,10 @@ const createTokenPair = async (payload, publicKey, privateKey) => {
     const refreshToken = JWT.sign(payload, privateKey, {
       expiresIn: "7 days",
     });
+
     //verify
     JWT.verify(accessToken, publicKey, (err, decode) => {
-      if (err) {
-        console.log(`error verify access token:: ${err.message}`);
-      } else {
-        console.log(`decode token:: ${JSON.stringify(decode)}); }`);
-      }
+      if (err) throw err;
     });
     return { accessToken, refreshToken };
   } catch (err) {
@@ -43,35 +39,19 @@ const authentication = asyncHandler(async (req, res, next) => {
   }
 
   const keyStore = await KeyService.findByUserId(userId);
-
   if (!keyStore) {
     throw new NotFoundError("Key Store not found");
   }
-
-  //
-  if (req.headers[HEADER.REFRESHTOKEN]) {
-    try {
-      const refreshToken = req.headers[HEADER.REFRESHTOKEN];
-      const decodeUser = JWT.verify(refreshToken, keyStore.privateKey);
-      req.user = decodeUser;
-      req.refreshToken = refreshToken;
-      req.keyStore = keyStore;
-      return next();
-    } catch (err) {}
-  }
   const accessToken = req.headers[HEADER.AUTHORIZATION];
-
   if (!accessToken) {
     throw new UnauthorizedError("Invalid Request");
   }
-
   try {
     const decode = JWT.verify(accessToken, keyStore.publicKey);
     if (userId !== decode.userId) {
       throw new UnauthorizedError("Invalid User");
     }
     req.keyStore = keyStore;
-    req.user = decode;
     return next();
   } catch (err) {
     throw err;

@@ -18,7 +18,6 @@ class KeyService {
         },
         options = { upsert: true, new: true };
       const tokens = await keySchema.findOneAndUpdate(filter, update, options);
-      console.log(tokens);
       return tokens ? tokens.publicKey : null;
     } catch (err) {
       return err;

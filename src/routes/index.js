@@ -8,6 +8,9 @@ const checkoutRouter = require("./checkout");
 const inventoryRouter = require("./inventory");
 const commentRouter = require("./comment");
 const uploadRouter = require("./upload");
+const profileRouter = require("./profile");
+const emailRouter = require("./email");
+const userRouter = require("./user");
 router.use(apiKey);
 router.use(checkPermissionApiKey("0000"));
 router.use("/access", accessRouter);
@@ -17,5 +20,8 @@ router.use("/checkout", checkoutRouter);
 router.use("/inventory", inventoryRouter);
 router.use("/comment", commentRouter);
 router.use("/upload", uploadRouter);
+router.use("/profile", profileRouter);
+router.use("/email", emailRouter);
+router.use("/user", userRouter);
 
 module.exports = router;
