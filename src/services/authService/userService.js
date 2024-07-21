@@ -22,6 +22,19 @@ const UserService = {
             showToastError(error.response.data.message);
         }
     },
+     GetUserData: async (token) => {
+        try {
+            const response = await http.get(`users`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error("Error retrieving user data:", error);
+            throw new Error("Đã xảy ra lỗi khi lấy dữ liệu người dùng");
+        }
+    },
    
  
 }
