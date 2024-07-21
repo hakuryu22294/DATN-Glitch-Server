@@ -12,16 +12,25 @@ const otpSchema = new Schema(
     otpEmail: {
       type: String,
       required: true,
+      unique: true,
+      validate: {
+        validator: function (v) {
+          return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(v);
+        },
+        message: (props) => `${props.value} is not a valid email!`,
+      },
     },
     otpStatus: {
       type: String,
       default: "pending",
       enum: ["pending", "active", "token"],
     },
+    optPassword: {
+      type: String,
+    },
     expireAt: {
       type: Date,
-      default: Date.now(),
-      expires: 60 * 5,
+      expires: 1000 * 60 * 5,
     },
   },
   {

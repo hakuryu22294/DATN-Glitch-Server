@@ -6,20 +6,20 @@ const {
 const { User } = require("../models/user.schema");
 const { sendEmailToken } = require("./email.service");
 const bcrypt = require("bcryptjs");
-const KeyService = require("./key.service");
 const { checkEmailToken } = require("./otp.service");
 const crypto = require("crypto");
 const { createTokenPair } = require("../auth/authUtils");
 const { getInfoData } = require("../utils");
+require("dotenv").config();
 
 class UserService {
-  static async newUser({ email = null }) {
+  static async newUser({ email = null, password }) {
     //check email in dbs
     const user = await User.findOne({ email }).lean();
     if (user) {
       throw new BadRequestError("User already exist");
     }
-    const result = await sendEmailToken({ email });
+    const result = await sendEmailToken({ email, password });
     return {
       message: "Verify",
       result,
@@ -27,42 +27,28 @@ class UserService {
   }
   static async checkLoginEmailTokenService({ token }) {
     try {
-      const { otpEmail, otpToken } = await checkEmailToken({ token });
+      const { otpEmail, otpToken, optPassword } = await checkEmailToken({
+        token,
+      });
       if (!otpEmail) throw new BadRequestError("Token not found");
       const userExists = await findUserByEmailWithLogin({ email: otpEmail });
       if (userExists) throw new BadRequestError("User already exist");
-
-      const passwordHash = await bcrypt.hash(otpToken, 10);
+      const passwordHash = await bcrypt.hash(optPassword, 10);
 
       const newUser = await createUser({
-        userId: 1,
-        userEmail: otpEmail,
+        email: otpEmail,
         username: otpEmail.split("@")[0],
         password: passwordHash,
-        userRole: "user",
+        status: "active",
       });
       if (newUser) {
-        const privateKey = crypto.randomBytes(64).toString("hex"); //save collection key store
-        const publicKey = crypto.randomBytes(64).toString("hex"); //save collection key store
-        const keyStore = await KeyService.createKeyToken({
+        const tokens = await createTokenPair({
           userId: newUser._id,
-          publicKey,
-          privateKey,
+          email: otpEmail,
         });
-        if (!keyStore) {
-          throw new BadRequestError("Can not create key store");
-        }
-        const tokens = await createTokenPair(
-          {
-            userId: newUser._id,
-            email: otpEmail,
-          },
-          publicKey,
-          privateKey
-        );
         return {
           user: getInfoData({
-            fields: ["_id", "username", "userEmail", "role"],
+            fields: ["_id", "username", "email", "role"],
             object: newUser,
           }),
           tokens,
@@ -71,6 +57,25 @@ class UserService {
     } catch (err) {
       throw err;
     }
+  }
+  static async signIn({ email, password }) {
+    //check email in dbs
+    const foundUser = await findUserByEmailWithLogin({ email });
+    if (!foundUser) throw new BadRequestError("User not registered");
+    //match password
+    const matchPassword = await bcrypt.compare(password, foundUser.password);
+    if (!matchPassword) throw new BadRequestError("Wrong password");
+    const tokens = await createTokenPair(
+      {
+        userId: foundUser._id,
+        email,
+      },
+      process.env.SECRET_KEY
+    );
+    return {
+      user: foundUser,
+      tokens,
+    };
   }
 }
 

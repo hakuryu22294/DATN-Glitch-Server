@@ -7,6 +7,7 @@ class UserController {
       message: "New user",
       metadata: await UserService.newUser({
         email: req.body.email,
+        password: req.body.password,
       }),
     }).send(res);
   };
@@ -16,6 +17,15 @@ class UserController {
     new SuccessResponse({
       message: "Verified Success",
       metadata: respon,
+    }).send(res);
+  };
+  userLogin = async (req, res, next) => {
+    new SuccessResponse({
+      message: "Login Success",
+      metadata: await UserService.signIn({
+        email: req.body.email,
+        password: req.body.password,
+      }),
     }).send(res);
   };
 }

@@ -5,8 +5,6 @@ const COLLECTION_NAME = "Users";
 
 const userSchema = new Schema(
   {
-    userId: { type: Number, required: true },
-    userSlug: { type: String },
     username: {
       type: String,
       required: true,
@@ -21,10 +19,7 @@ const userSchema = new Schema(
       type: String,
       required: true,
     },
-    userSalf: {
-      type: String,
-    },
-    userEmail: {
+    email: {
       type: String,
       required: true,
       validate: {
@@ -34,27 +29,27 @@ const userSchema = new Schema(
         message: (props) => `${props.value} is not a valid email!`,
       },
     },
-    userPhone: {
+    phone: {
       type: String,
       default: "",
     },
-    userSex: {
+    sex: {
       type: String,
       default: "",
     },
-    userAvatar: {
+    avatar: {
       type: String,
       default: "",
     },
-    userDoB: {
+    dob: {
       type: Date,
       default: "",
     },
     role: {
-      type: Schema.Types.ObjectId,
-      ref: "Role",
+      type: String,
+      default: "user",
     },
-    userStatus: {
+    status: {
       type: String,
       default: "pending",
       enum: ["pending", "active", "inactive"],

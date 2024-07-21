@@ -8,10 +8,13 @@ const generateTokenRandom = () => {
   return token;
 };
 
-const newOtp = async ({ email }) => {
+const newOtp = async ({ email, password }) => {
   const token = generateTokenRandom();
-  const newToken = await Otp.create({ otpToken: token, otpEmail: email });
-  console.log(newToken);
+  const newToken = await Otp.create({
+    otpToken: token,
+    otpEmail: email,
+    optPassword: password,
+  });
   return newToken;
 };
 

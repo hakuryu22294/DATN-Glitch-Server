@@ -11,8 +11,13 @@ const shopSchema = new Schema(
     email: {
       type: String,
       trim: true,
-      unique: true,
       required: true,
+      validate: {
+        validator: function (v) {
+          return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(v);
+        },
+        message: (props) => `${props.value} is not a valid email!`,
+      },
     },
     password: {
       type: String,
@@ -20,16 +25,16 @@ const shopSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["active", "inactive"],
-      default: "active",
+      enum: ["active", "inactive", "pending"],
+      default: "pending",
     },
     verify: {
       type: Schema.Types.Boolean,
       default: false,
     },
-    roles: {
+    role: {
       type: Array,
-      default: [],
+      default: "shop",
     },
   },
   {

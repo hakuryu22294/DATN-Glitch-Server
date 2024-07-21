@@ -27,9 +27,9 @@ const sendEmailLinkVerify = async ({
     return error;
   }
 };
-const sendEmailToken = async ({ email = null }) => {
+const sendEmailToken = async ({ email = null, password }) => {
   try {
-    const getToken = await newOtp({ email });
+    const getToken = await newOtp({ email, password });
     //get template
     const template = await getTemplate({ tempName: "HTML mail token" });
     if (!template) {
@@ -37,7 +37,7 @@ const sendEmailToken = async ({ email = null }) => {
     }
 
     const content = replaceHolder(template.tempHTML, {
-      link_verify: `http://localhost:8000/api/v1/user/verify?token=${getToken.otpToken}`,
+      link_verify: `http://localhost:5173/verify?token=${getToken.otpToken}`,
     });
 
     sendEmailLinkVerify({

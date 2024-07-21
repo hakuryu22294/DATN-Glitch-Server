@@ -2,17 +2,16 @@ const { BadRequestError } = require("../../core/error.response");
 const { User } = require("../user.schema");
 
 const findUserByEmailWithLogin = async ({ email }) => {
-  const user = await User.findOne({ userEmail: email }).lean();
+  const user = await User.findOne({ email }).lean();
   return user;
 };
 
-const createUser = async ({ userId, userEmail, username, password, role }) => {
+const createUser = async ({ email, username, password, status }) => {
   const user = await User.create({
-    userId,
-    userEmail,
+    email,
     password,
     username,
-    role,
+    status,
   });
   return user;
 };
