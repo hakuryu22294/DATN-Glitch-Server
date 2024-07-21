@@ -51,7 +51,7 @@ const RegisterContainer = () => {
                             className='block border-2 border-slate-200 p-2 rounded-[5px] w-full my-3' 
                         />
                         {formik.touched.name && formik.errors.name ? (
-                            <div className="text-red-500">{formik.errors.name}</div>
+                            <div className="text-rose-500">{formik.errors.name}</div>
                         ) : null}
                         <input 
                             type="email" 

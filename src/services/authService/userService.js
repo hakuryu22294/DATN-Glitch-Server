@@ -6,13 +6,13 @@ const UserService = {
         try {
             const { data } = await http.post('/access/shop/sign-up', dataRegister)
             if(!data) return
-            showToastSuccess(data.message)
+            showToastSuccess(`${data.message} Vui lòng kiểm tra mail để xác thực tài khoản`)
             return data
         } catch (error) {
             showToastError(error.response.data.message);
         }
     },
-       LoginAccount: async (dataLogin) => {
+    LoginAccount: async (dataLogin) => {
         try {
             const {data} = await http.post(`access/shop/sign-in`, dataLogin);
             if(!data) return
@@ -22,7 +22,7 @@ const UserService = {
             showToastError(error.response.data.message);
         }
     },
-     GetUserData: async (token) => {
+    GetUserData: async (token) => {
         try {
             const response = await http.get(`users`, {
                 headers: {
@@ -35,7 +35,5 @@ const UserService = {
             throw new Error("Đã xảy ra lỗi khi lấy dữ liệu người dùng");
         }
     },
-   
- 
 }
 export default UserService
