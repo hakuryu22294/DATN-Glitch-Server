@@ -18,10 +18,10 @@ const otpSchema = new Schema(
       default: "pending",
       enum: ["pending", "active", "token"],
     },
-    exprireAt: {
+    expireAt: {
       type: Date,
       default: Date.now(),
-      expires: 60,
+      expires: 60 * 5,
     },
   },
   {

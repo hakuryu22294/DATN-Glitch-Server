@@ -6,7 +6,7 @@ const COLLECTION_NAME = "Users";
 const userSchema = new Schema(
   {
     userId: { type: Number, required: true },
-    userSlug: { type: String, required: true },
+    userSlug: { type: String },
     username: {
       type: String,
       required: true,
@@ -23,7 +23,6 @@ const userSchema = new Schema(
     },
     userSalf: {
       type: String,
-      required: true,
     },
     userEmail: {
       type: String,
@@ -38,14 +37,6 @@ const userSchema = new Schema(
     userPhone: {
       type: String,
       default: "",
-      validate: {
-        validator: function (v) {
-          return /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/.test(
-            v
-          );
-        },
-        message: (props) => `${props.value} is not a valid phone!`,
-      },
     },
     userSex: {
       type: String,

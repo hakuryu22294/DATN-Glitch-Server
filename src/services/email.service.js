@@ -4,13 +4,16 @@ const transport = require("../dbs/init.nodemailer");
 const { BadRequestError } = require("../core/error.response");
 const { replaceHolder } = require("../utils");
 
-const sendEmailLinkVerify = ({ html, toEmail, subject = "Verify email" }) => {
+const sendEmailLinkVerify = async ({
+  html,
+  toEmail,
+  subject = "Verify email",
+}) => {
   try {
     const emailOptions = {
       from: '"Glitch Service" <quanghack12b@gmail.com>',
       to: toEmail,
       subject,
-      text,
       html,
     };
     transport.sendMail(emailOptions, (error, info) => {
@@ -32,14 +35,17 @@ const sendEmailToken = async ({ email = null }) => {
     if (!template) {
       throw new BadRequestError("Template not found");
     }
+
     const content = replaceHolder(template.tempHTML, {
-      link_verify: `http://localhost:8000/verify/${getToken.otpToken}`,
+      link_verify: `http://localhost:8000/api/v1/user/verify?token=${getToken.otpToken}`,
     });
-    //send email
+
     sendEmailLinkVerify({
-      template,
       toEmail: email,
       subject: "Verify email Register Glitch service",
+      html: content,
+    }).catch((error) => {
+      throw error;
     });
     return 1;
   } catch (error) {

@@ -24,11 +24,11 @@ class AccessService {
       throw new BadRequestError("Shop already exist");
     }
     const hashPassword = await bcrypt.hash(password, 10);
-    const newShop = new shopSchema({
+    const newShop = await shopSchema.create({
       name,
       email,
       password: hashPassword,
-      roles: [RoleShop.SHOP],
+      role: "shop",
     });
     if (newShop) {
       const publicKey = crypto.randomBytes(64).toString("hex"); //save collection key store

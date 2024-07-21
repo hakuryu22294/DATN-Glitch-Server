@@ -48,6 +48,7 @@ const replaceHolder = (template, params) => {
     const placeHolder = `{{${key}}}`;
     template = template.replace(new RegExp(placeHolder, "g"), params[key]);
   });
+  return template;
 };
 
 module.exports = {
