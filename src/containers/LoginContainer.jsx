@@ -9,7 +9,7 @@ const LoginContainer = () => {
     const { handleToogleForm } = useContext(ShowUiContext);
     const [isFormFilled, setIsFormFilled] = useState(false);
 
- const formik = useFormik({
+    const formik = useFormik({
         initialValues: {
             email: "",
             password: ""
