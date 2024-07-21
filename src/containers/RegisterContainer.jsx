@@ -6,8 +6,30 @@ import { ShowUiContext } from '../hooks/ShowUiContext';
 import { validationRegister } from '../config/yup/validateForm';
 
 const RegisterContainer = () => {
-   
+    const { handleToogleForm } = useContext(ShowUiContext);
+    const [isFormFilled, setIsFormFilled] = useState(false);
 
+    const formik = useFormik({
+        initialValues: {
+            name: "",
+            email: "",
+            password: ""
+        },
+        validationSchema: validationRegister, 
+        onSubmit: async (values) => {
+                const data = await UserService.RegisterAccount(values);
+                if (!data) {
+                    return;
+                }
+                formik.resetForm();
+                handleToogleForm(false);
+          
+        }
+    });
+
+    useEffect(() => {
+        setIsFormFilled(formik.values.name && formik.values.email && formik.values.password);
+    }, [formik.values]);
     return createPortal(
         <>
             <form method='POST' onSubmit={formik.handleSubmit}>
