@@ -3,7 +3,18 @@ import { formatCurrency } from "../../config/formatCurrency";
 const Product = (props) => {
     const { image, name, price, quantity, ratingAverage } = props
     const [nameLong, setNameLong] = useState('')
-
+ useEffect(()=>{
+        if(!name){
+            return
+        }
+        const maxLength = 50;
+        let text = name;
+      
+        if (text.length > maxLength) {
+            text = text.slice(0, maxLength) + '...';
+        }
+        setNameLong(text)
+    },[name])
     return (
         <>
             <div className="cursor-pointer group shadow " >
