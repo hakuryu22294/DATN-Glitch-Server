@@ -1,7 +1,7 @@
 import { createContext, useState } from "react";
 export const TabContent = createContext()
 const TabUiContext = ({ children }) => {
-    const [tab, setTab] = useState(null);
+    const [tab, setTab] = useState(1);
     const handleTabUi = (next) => {
         setTab(next)
     }
