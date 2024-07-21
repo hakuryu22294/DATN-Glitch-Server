@@ -12,6 +12,16 @@ const UserService = {
             showToastError(error.response.data.message);
         }
     },
+       RegisterAccountUser: async (dataRegister) => {
+        try {
+            const { data } = await http.post('/access/user/sign-up', dataRegister)
+            if(!data) return
+            showToastSuccess(`${data.message} Vui lòng kiểm tra mail để xác thực tài khoản`)
+            return data
+        } catch (error) {
+            showToastError(error.response.data.message);
+        }
+    },
     LoginAccount: async (dataLogin) => {
         try {
             const {data} = await http.post(`access/shop/sign-in`, dataLogin);
