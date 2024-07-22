@@ -1,27 +1,7 @@
-const express = require("express");
-const router = express.Router();
-const accessRouter = require("./access");
-const { apiKey, checkPermissionApiKey } = require("../auth/checkAuth");
-const productRouter = require("./product");
-const discountRouter = require("./discount");
-const checkoutRouter = require("./checkout");
-const inventoryRouter = require("./inventory");
-const commentRouter = require("./comment");
-const uploadRouter = require("./upload");
-const emailRouter = require("./email");
-const userRouter = require("./user");
-const cartRouter = require("./cart");
-router.use(apiKey);
-router.use(checkPermissionApiKey("0000"));
-router.use("/access", accessRouter);
-router.use("/products", productRouter);
-router.use("/discount", discountRouter);
-router.use("/checkout", checkoutRouter);
-router.use("/inventory", inventoryRouter);
-router.use("/comment", commentRouter);
-router.use("/upload", uploadRouter);
-router.use("/email", emailRouter);
-router.use("/user", userRouter);
-router.use("/carts", cartRouter);
+const { Router } = require("express");
+const productRouter = require("./allRoutes/productRouter");
+const router = Router();
+
+router.use("/product", productRouter);
 
 module.exports = router;

@@ -1,16 +1,14 @@
-const { model, Schema, Types } = require("mongoose");
-const COLLECTION_NAME = "Shops";
-const DOCUMENT_NAME = "Shop";
-const shopSchema = new Schema(
+const { Schema, model } = require("mongoose");
+const DOCUMENT_NAME = "Admin";
+const COLLECTION_NAME = "Admins";
+const adminSchema = new schema(
   {
     name: {
       type: String,
-      trim: true,
       required: true,
     },
     email: {
       type: String,
-      trim: true,
       required: true,
       validate: {
         validator: function (v) {
@@ -23,18 +21,14 @@ const shopSchema = new Schema(
       type: String,
       required: true,
     },
-    status: {
+    avatar: {
       type: String,
-      enum: ["active", "inactive", "pending"],
-      default: "pending",
-    },
-    verify: {
-      type: Schema.Types.Boolean,
-      default: false,
+      default:
+        "https://res.cloudinary.com/dw3h0r5jy/image/upload/v1633355639/avatars/avatar-1.png",
     },
     role: {
-      type: Array,
-      default: "shop",
+      type: String,
+      default: "admin",
     },
   },
   {
@@ -42,4 +36,7 @@ const shopSchema = new Schema(
     collection: COLLECTION_NAME,
   }
 );
-module.exports = model(DOCUMENT_NAME, shopSchema);
+
+module.exports = {
+  Admin: model(DOCUMENT_NAME, adminSchema),
+};

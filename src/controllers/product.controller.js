@@ -1,96 +1,147 @@
-const ProductService = require("../services/product.service");
+const formidable = require("formidable");
+const { cloudinary } = require("../configs/cloudinary.config");
+const {
+  findProductByName,
+  findAllProduct,
+  findProductById,
+} = require("../models/repo/product.repo");
+const { BadRequestError } = require("../core/error.response");
+const { Product } = require("../models/product.schema");
+const { parseInt } = require("lodash");
 const { SuccessResponse } = require("../core/success.response");
-
+const { default: slugify } = require("slugify");
 class ProductController {
-  createProduct = async (req, res, next) => {
-    console.log(req.user);
-    new SuccessResponse({
-      message: "Create product successfully",
-      metadata: await ProductService.createProduct(req.body.type, {
-        ...req.body,
-        shop: req.user.userId,
-      }),
-    }).send(res);
-  };
-  updateProduct = async (req, res, next) => {
-    new SuccessResponse({
-      message: "Update product successfully",
-      metadata: await ProductService.updateProduct(
-        req.body.type,
-        req.params.id,
-        {
-          ...req.body,
-          shop: req.user.userId,
-        }
-      ),
-    }).send(res);
-  };
+  async add_product(req, res) {
+    const { id } = req;
+    const form = formidable({ multiples: true });
+    form.parse(req, async (err, fields, files) => {
+      let {
+        name,
+        category,
+        description,
+        stock,
+        price,
+        discount,
+        shopName,
+        brand,
+      } = fields;
+      name = name.trim();
+      const { images } = files;
+      let allImgUrl = [];
 
-  //query
-  /**
-   * @desc Get all draft
-   * @route GET /api/v1/product/draft/all
-   * @param {Number} limit
-   * @param {Number} skip
-   * @return {JSON}
-   */
-  getAllDraftForShop = async (req, res, next) => {
-    new SuccessResponse({
-      message: "Get all draft successfully",
-      metadata: await ProductService.findAllDraftsForShop({
-        shop: req.user.userId,
-      }),
-    }).send(res);
-  };
-  getAllPublishForShop = async (req, res, next) => {
-    new SuccessResponse({
-      message: "Get all publish successfully",
-      metadata: await ProductService.findAllPublishForShop({
-        shop: req.user.userId,
-      }),
-    }).send(res);
-  };
+      for (let i = 0; i < images.length; i++) {
+        const result = await cloudinary.uploader.upload(images[i].filepath, {
+          folder: "products",
+        });
+        allImgUrl = [...allImgUrl, result.url];
+      }
 
-  publishProductByShop = async (req, res, next) => {
-    new SuccessResponse({
-      message: "Publish product successfully",
-      metadata: await ProductService.publishProductByShop({
-        _id: req.params.id,
-        shop: req.user.userId,
-      }),
-    }).send(res);
-  };
+      const findProduct = await findProductByName({ name });
 
-  unPublishProductByShop = async (req, res, next) => {
-    new SuccessResponse({
-      message: "Unpublish product successfully",
-      metadata: await ProductService.unPublishProductByShop({
-        _id: req.params.id,
-        shop: req.user.userId,
-      }),
-    }).send(res);
-  };
+      if (findProduct) throw new BadRequestError("Product already exists");
 
-  getListSearchProducts = async (req, res, next) => {
-    new SuccessResponse({
-      message: "Search product successfully",
-      metadata: await ProductService.searchProducts(req.params),
-    }).send(res);
-  };
-  findAllProducts = async (req, res, next) => {
-    new SuccessResponse({
-      message: "Get all products successfully",
-      metadata: await ProductService.findAllProducts(req.query),
-    }).send(res);
-  };
-  findProduct = async (req, res, next) => {
+      const newProduct = await Product.create({
+        sellerId: id,
+        name,
+        shopName,
+        category: category.trim(),
+        description: description.trim(),
+        stock: parseInt(stock),
+        discount: parseInt(discount),
+        price: parseInt(price),
+        images: allImgUrl,
+        brand: brand.trim(),
+      });
+      if (!newProduct) throw new BadRequestError("Product don't created");
+      new SuccessResponse({
+        message: "Product created successfully",
+        data: newProduct,
+      }).send(res);
+    });
+  }
+
+  async get_product(req, res) {
+    const { page, searchValue, parPage } = req.query;
+    const { id } = req;
+    const skipPage = parseInt(parPage) * parseInt(page) - 1;
+
+    const { products, total } = await findAllProduct({
+      parPage,
+      sellerId: id,
+      searchValue,
+      skipPage,
+    });
     new SuccessResponse({
       message: "Get product successfully",
-      metadata: await ProductService.findProduct({
-        _id: req.params.id,
-      }),
+      data: { products, total },
+    });
+  }
+  async get_one_product(req, res) {
+    const { productId } = req.params;
+    const product = await findProductById({ id: productId });
+    new SuccessResponse({
+      message: "Get product successfully",
+      data: product,
     }).send(res);
-  };
+  }
+
+  async update_product(req, res) {
+    let { name, description, stock, price, discount, brand, productId } =
+      req.body;
+    name = name.trim();
+    slug = slugify(name, { lower: true });
+    const findProduct = await findProductById({ _id: productId });
+
+    if (!findProduct) throw new BadRequestError("Product not found");
+    const updateProduct = await Product.findByIdAndUpdate(
+      { _id: productId },
+      {
+        name,
+        slug,
+        description,
+        stock,
+        price,
+        discount,
+        brand,
+      }
+    );
+
+    new SuccessResponse({
+      message: "Update product successfully",
+      data: updateProduct,
+    });
+  }
+  async product_img_update(req, res) {
+    const form = formidable({ multiples: true });
+
+    form.parse(req, async (err, fields, files) => {
+      const { productId, oldImage } = fields;
+      const { newImage } = files;
+      if (err) {
+        throw new BadRequestError(err.message);
+      } else {
+        const result = await cloudinary.uploader.upload(newImage.filepath, {
+          folder: "products",
+        });
+      }
+      if (result) {
+        let { images } = await findProductById({ _id: productId });
+        const index = images.findIndex((img) => img === oldImage);
+        images[index] = result.url;
+        const productUpdated = await Product.findByIdAndUpdate(
+          { _id: productId },
+          { images }
+        );
+
+        new SuccessResponse({
+          message: "Update product image successfully",
+          data: productUpdated,
+        }).send(res);
+      } else {
+        throw new BadRequestError("Image not found");
+      }
+    });
+  }
 }
 
 module.exports = new ProductController();

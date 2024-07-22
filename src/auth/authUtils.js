@@ -3,9 +3,7 @@ const { UnauthorizedError, NotFoundError } = require("../core/error.response");
 const { asyncHandler } = require("../helpers/asyncHandler");
 const { Blacklist } = require("../models/blacklist.schema");
 require("dotenv").config();
-const HEADER = {
-  API_KEY: "x-api-key",
-};
+
 const createTokenPair = async (payload) => {
   const accessToken = JWT.sign(payload, process.env.SECRET_KEY, {
     expiresIn: "7d",
@@ -23,7 +21,6 @@ const getTokenFromHeader = (req) => {
 };
 const authentication = asyncHandler(async (req, res, next) => {
   const accessToken = getTokenFromHeader(req);
-  console.log(accessToken);
   if (!accessToken) {
     throw new UnauthorizedError("Invalid Request");
   }
@@ -37,13 +34,15 @@ const authentication = asyncHandler(async (req, res, next) => {
       process.env.SECRET_KEY,
       (err, decode) => {
         if (err) {
-          throw new UnauthorizedError("Invalid Token");
+          throw new UnauthorizedError("Invalid Token 1");
         }
         return decode;
       }
     );
+    req.user = decode;
+    console.log(decode);
     if (!decode) {
-      throw new UnauthorizedError("Invalid Token");
+      throw new UnauthorizedError("Invalid Token 2");
     }
     next();
   } catch (err) {
