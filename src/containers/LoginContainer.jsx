@@ -18,11 +18,14 @@ const LoginContainer = () => {
         onSubmit: async (values) => {
 
             const data = await UserService.LoginAccount(values);
-            console.log(data);
-            if (!data) return
-            if(!data.metadata.tokens.accessToken) return
-                localStorage.setItem('accessToken', JSON.stringify(data.metadata.tokens.accessToken))
-            formik.resetForm();
+   
+                     if (!data.metadata.tokens) return
+
+           
+            localStorage.setItem('accessToken', JSON.stringify(data.metadata.tokens))
+                      
+            localStorage.setItem('user', JSON.stringify(data.metadata))
+
             handleToogleForm(false);
 
         }
