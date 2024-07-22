@@ -12,6 +12,10 @@ const productSchema = new Schema(
       type: String,
       required: true,
     },
+    slug: {
+      type: String,
+      required: true,
+    },
     category: {
       type: String,
       required: true,
@@ -23,10 +27,12 @@ const productSchema = new Schema(
     price: {
       type: Number,
       required: true,
+      min: 1,
     },
     stock: {
       type: Number,
       required: true,
+      min: 0,
     },
     shopName: {
       type: String,
@@ -47,6 +53,8 @@ const productSchema = new Schema(
     rating: {
       type: Number,
       required: true,
+      min: 0,
+      max: 5,
     },
   },
   {

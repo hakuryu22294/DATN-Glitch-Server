@@ -1,13 +1,14 @@
 const { model, Schema } = require("mongoose");
 
-const DOCUMENT_NAME = "Order";
-const COLLECTION_NAME = "Orders";
+const DOCUMENT_NAME = "CustomerOrder";
+const COLLECTION_NAME = "CustomerOrders";
 
-const orderSchema = new Schema(
+const customerOrderSchema = new Schema(
   {
-    sellerId: {
-      typeo: Schema.Types.ObjectId,
+    customerId: {
+      type: Schema.Types.ObjectId,
       required: true,
+      ref: "Customer",
     },
     products: {
       type: Array,
@@ -22,7 +23,7 @@ const orderSchema = new Schema(
       required: true,
     },
     shippingInfo: {
-      type: String,
+      type: Object,
       required: true,
     },
     deliveryStatus: {
@@ -41,5 +42,5 @@ const orderSchema = new Schema(
 );
 
 module.exports = {
-  Order: model(DOCUMENT_NAME, orderSchema),
+  CustomerOrder: model(DOCUMENT_NAME, customerOrderSchema),
 };
