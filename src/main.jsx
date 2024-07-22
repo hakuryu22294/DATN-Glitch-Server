@@ -4,7 +4,10 @@ import './index.css'
 import { BrowserRouter as Router } from 'react-router-dom';
 import TabUiContext from './hooks/TabUiContext.jsx';
 import ShowUiProvider from './hooks/ShowUiContext.jsx';
+import UserContext from './hooks/UserContext.jsx';
+
 ReactDOM.createRoot(document.getElementById('root')).render(
+            <UserContext>
         <ShowUiProvider>
                 <TabUiContext>
                         <Router>
@@ -12,4 +15,5 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                         </Router>
                 </TabUiContext>
         </ShowUiProvider>
+            </UserContext>
 )
