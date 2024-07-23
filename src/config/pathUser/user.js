@@ -3,6 +3,7 @@ const PathUser = {
      Home:'/',
      VertifyAccount:'/vertify',
      DetailProduct:'/detail/:id',
+     Cart:'/cart',
 
 
 }
