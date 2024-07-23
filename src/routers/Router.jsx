@@ -3,7 +3,7 @@ import NotFound from "../pages/NotFound";
 import Home from "../pages/Home";
 import VertifyAccount from "../pages/VertifyAccount";
 import Detailproduct from "../contents/Home/Detailproduct";
-
+import Cart from "../pages/Cart";
 const UserRouter = [
 {
     path:PathUser.NotFound,
@@ -20,6 +20,10 @@ const UserRouter = [
         {
         path:PathUser.DetailProduct,
         component: Detailproduct,
+    },
+        {
+        path: PathUser.Cart,
+        component: Cart,
     }
     
 ]
