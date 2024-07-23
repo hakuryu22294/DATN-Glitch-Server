@@ -13,6 +13,7 @@ const Navigation = () => {
     const { handleTabUi, tab } = useContext(TabContent)
     const {handleToogleForm} = useContext(ShowUiContext)
      const { user } = useContext(UserProvider)
+    const [cart] = useState(JSON.parse(localStorage.getItem('cart')) || []);
 
     const listCate = [
         {
@@ -66,7 +67,14 @@ const Navigation = () => {
                         </div>
                              <div className="flex gap-4 items-center ">
                             <SearchHome />
-                            <FaCartShopping className="text-[30px] text-[#fff] " />
+                              <div className="relative">
+                                 <Link to={'/cart'}>
+                                 <FaCartShopping className="text-[30px] text-[#fff] cursor-pointer " />
+                                 </Link>
+                                <div className="absolute top-[-10px] right-[-10px]">
+                                    <span className="bg-rose-500 text-[#fff] font-bold w-[20px] h-[20px] flex justify-center items-center rounded-[50%]">{cart.length}</span>
+                                </div>
+                            </div>
                             {!user || user === null ? (
                                 <>
                                     <ButtonDefault
