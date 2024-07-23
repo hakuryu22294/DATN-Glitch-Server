@@ -275,6 +275,22 @@ class OrderController {
       message: "Order confrim successfully",
     }).send(res);
   };
+  admin_order_status_update = async (req, res) => {
+    const { orderId } = req.params;
+    const { status } = req.body;
+    await CustomerOrder.findByIdAndUpdate({ _id: orderId }, { status });
+    new SuccessResponse({
+      message: "Order status update successfully",
+    }).send(res);
+  };
+  seller_order_status_update = async (req, res) => {
+    const { orderId } = req.params;
+    const { status } = req.body;
+    await Order.findByIdAndUpdate({ _id: orderId }, { status });
+    new SuccessResponse({
+      message: "Order status update successfully",
+    }).send(res);
+  };
 }
 
 module.exports = new OrderController();

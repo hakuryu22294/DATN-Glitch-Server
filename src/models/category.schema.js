@@ -28,7 +28,7 @@ categorySchema.pre("save", function (next) {
   next();
 });
 
-categorySchema.index({ name: text });
+categorySchema.index({ name: "text" });
 
 module.exports = {
   Category: model(DOCUMENT_NAME, categorySchema),

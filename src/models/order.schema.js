@@ -6,7 +6,7 @@ const COLLECTION_NAME = "Orders";
 const orderSchema = new Schema(
   {
     sellerId: {
-      typeo: Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       required: true,
     },
     products: {

@@ -1,7 +1,7 @@
 const { Schema, model } = require("mongoose");
 const DOCUMENT_NAME = "Admin";
 const COLLECTION_NAME = "Admins";
-const adminSchema = new schema(
+const adminSchema = new Schema(
   {
     name: {
       type: String,
