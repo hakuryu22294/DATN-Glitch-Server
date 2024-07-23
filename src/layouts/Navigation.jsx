@@ -112,7 +112,13 @@ const Navigation = () => {
                                             </div>
                                         </div>
                                     </div>
-
+                                      <div>
+                                        {user.role[0] === "shop" && (
+                                            <Link to={'/d'}>
+                                                <span className="text-[#fff] cursor-pointer font-bold">Quản lí Shop</span>
+                                            </Link>
+                                        )}
+                                    </div>
                                 </>
                             )}
                         </div>
