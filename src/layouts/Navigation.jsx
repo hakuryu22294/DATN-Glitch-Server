@@ -9,12 +9,13 @@ import { TabContent } from "../hooks/TabUiContext";
 import { ShowUiContext } from "../hooks/ShowUiContext";
 import { ShowUiContext } from "../hooks/ShowUiContext";
 import { UserProvider } from "../hooks/UserContext";
+import { CartContext } from "../hooks/CartContext";
+
 const Navigation = () => {
     const { handleTabUi, tab } = useContext(TabContent)
     const {handleToogleForm} = useContext(ShowUiContext)
      const { user } = useContext(UserProvider)
-    const [cart] = useState(JSON.parse(localStorage.getItem('cart')) || []);
-
+    const { cart } = useContext(CartContext)
     const listCate = [
         {
             nameCategories: "Cho bạn",
