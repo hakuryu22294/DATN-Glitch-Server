@@ -13,7 +13,7 @@ export const add_product = createAsyncThunk(
   }
 );
 
-export const get_produdcts = createAsyncThunk(
+export const get_products = createAsyncThunk(
   "product/get_produdcts",
   async (
     { parPage, page, searchValue },
@@ -105,12 +105,12 @@ export const productReducer = createSlice({
         state.successMessage = payload.message;
       })
 
-      .addCase(get_produdcts.fulfilled, (state, { payload }) => {
-        state.totalProduct = payload.totalProduct;
+      .addCase(get_products.fulfilled, (state, { payload }) => {
+        state.totalProducts = payload.totalProduct;
         state.products = payload.products;
       })
       .addCase(get_product.fulfilled, (state, { payload }) => {
-        state.product = payload.product;
+        state.product = payload.data;
       })
 
       .addCase(update_product.pending, (state) => {
@@ -122,12 +122,12 @@ export const productReducer = createSlice({
       })
       .addCase(update_product.fulfilled, (state, { payload }) => {
         state.loader = false;
-        state.product = payload.product;
+        state.product = payload.data;
         state.successMessage = payload.message;
       })
 
       .addCase(product_image_update.fulfilled, (state, { payload }) => {
-        state.product = payload.product;
+        state.product = payload.data;
         state.successMessage = payload.message;
       });
   },

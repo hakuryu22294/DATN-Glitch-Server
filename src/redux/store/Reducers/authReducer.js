@@ -7,10 +7,10 @@ export const admin_login = createAsyncThunk(
   async (info, { rejectWithValue, fulfillWithValue }) => {
     try {
       const { data } = await instanceApi.post("/manager/admin/login", info);
-      localStorage.setItem("access_token", data.token);
+      localStorage.setItem("access_token", data.data);
       return fulfillWithValue(data);
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response.data.message);
     }
   }
 );
@@ -19,11 +19,16 @@ export const seller_login = createAsyncThunk(
   "auth/seller_login",
   async (info, { rejectWithValue, fulfillWithValue }) => {
     try {
-      const { data } = await instanceApi.post("/manager/seller/login", info);
-      localStorage.setItem("access_token", data.token);
+      const { data } = await instanceApi.post("/manager/seller/login", info, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      console.log(data);
+      localStorage.setItem("access_token", data.data);
       return fulfillWithValue(data);
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response.data.message);
     }
   }
 );
@@ -33,9 +38,9 @@ export const get_user_info = createAsyncThunk(
   async (_, { rejectWithValue, fulfillWithValue }) => {
     try {
       const { data } = await instanceApi.get("/manager/profile-info");
-      return fulfillWithValue(data);
+      return fulfillWithValue(data.data);
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response.data.message);
     }
   }
 );
@@ -50,7 +55,7 @@ export const profile_image_upload = createAsyncThunk(
       );
       return fulfillWithValue(data);
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response.data.message);
     }
   }
 );
@@ -60,9 +65,11 @@ export const seller_register = createAsyncThunk(
   async (info, { rejectWithValue, fulfillWithValue }) => {
     try {
       const { data } = await instanceApi.post("/manager/seller/register", info);
+      console.log(data);
+      localStorage.setItem("access_token", data.token);
       return fulfillWithValue(data);
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response.data.message);
     }
   }
 );
@@ -74,7 +81,7 @@ export const profile_info_update = createAsyncThunk(
       const { data } = await instanceApi.put("/manager/profile-info-add", info);
       return fulfillWithValue(data);
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response.data.message);
     }
   }
 );
@@ -92,21 +99,20 @@ export const logout = createAsyncThunk(
       }
       return fulfillWithValue(data);
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response.data.message);
     }
   }
 );
 
 const returnRole = (token) => {
   if (token) {
-    const decode = jwtDecode(token);
-    const expireTime = new Date(decode.exp * 1000);
-
-    if (expireTime < new Date()) {
-      localStorage.removeItem("access_token");
+    const decodeToken = jwtDecode(token);
+    const expireTime = new Date(decodeToken.exp * 1000);
+    if (new Date() > expireTime) {
+      localStorage.removeItem("accessToken");
       return "";
     } else {
-      return decode.role;
+      return decodeToken.role;
     }
   } else {
     return "";
@@ -119,13 +125,14 @@ const authReducer = createSlice({
     successMessage: "",
     errorMessage: "",
     loader: false,
-    userInfo: "",
-    role: returnRole(localStorage.getItem("access_token")),
-    token: localStorage.getItem("access_token"),
+    userInfo: {},
+    role: returnRole(localStorage.getItem("access_token")) || "",
+    token: localStorage.getItem("access_token") || null,
   },
   reducers: {
     messageClear: (state) => {
       state.errorMessage = "";
+      state.successMessage = "";
     },
   },
   extraReducers: (builder) => {
@@ -140,8 +147,8 @@ const authReducer = createSlice({
       .addCase(admin_login.fulfilled, (state, { payload }) => {
         state.loader = false;
         state.successMessage = payload.message;
-        state.token = payload.token;
-        state.role = returnRole(payload.token);
+        state.token = payload.data;
+        state.role = returnRole(payload.data);
       })
 
       .addCase(seller_login.pending, (state) => {
@@ -154,8 +161,9 @@ const authReducer = createSlice({
       .addCase(seller_login.fulfilled, (state, { payload }) => {
         state.loader = false;
         state.successMessage = payload.message;
-        state.token = payload.token;
-        state.role = returnRole(payload.token);
+        state.token = payload.data;
+        console.log(payload);
+        state.role = returnRole(payload.data);
       })
 
       .addCase(seller_register.pending, (state) => {
@@ -163,18 +171,19 @@ const authReducer = createSlice({
       })
       .addCase(seller_register.rejected, (state, { payload }) => {
         state.loader = false;
+        console.log(payload);
         state.errorMessage = payload.error;
       })
       .addCase(seller_register.fulfilled, (state, { payload }) => {
         state.loader = false;
         state.successMessage = payload.message;
-        state.token = payload.token;
-        state.role = returnRole(payload.token);
+        state.token = payload.data;
+        state.role = returnRole(payload.data);
       })
 
       .addCase(get_user_info.fulfilled, (state, { payload }) => {
         state.loader = false;
-        state.userInfo = payload.userInfo;
+        state.userInfo = payload;
       })
 
       .addCase(profile_image_upload.pending, (state) => {

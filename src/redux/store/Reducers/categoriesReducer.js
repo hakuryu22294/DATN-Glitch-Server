@@ -9,9 +9,10 @@ export const add_category = createAsyncThunk(
       formData.append("name", name);
       formData.append("image", image);
       const { data } = await instanceApi.post("/category", formData);
+      console.log(data);
       return fulfillWithValue(data);
     } catch (error) {
-      return rejectWithValue(error);
+      return rejectWithValue(error.response.data.message);
     }
   }
 );
@@ -28,7 +29,7 @@ export const get_categories = createAsyncThunk(
       );
       return fulfillWithValue(data);
     } catch (error) {
-      return rejectWithValue(error);
+      return rejectWithValue(error.response.data.message);
     }
   }
 );
@@ -60,9 +61,18 @@ export const categoriesReducer = createSlice({
         state.loader = false;
         state.errorMessage = payload.error;
       })
+
+      .addCase(get_categories.pending, (state) => {
+        state.loader = true;
+      })
+
+      .addCase(get_categories.rejected, (state, { payload }) => {
+        state.loader = false;
+        state.errorMessage = payload.error;
+      })
       .addCase(get_categories.fulfilled, (state, { payload }) => {
         state.totalCategories = payload.total;
-        state.categories = payload.categories;
+        state.categories = payload.data.categories;
       });
   },
 });

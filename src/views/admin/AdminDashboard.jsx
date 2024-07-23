@@ -5,9 +5,8 @@ import { FaCartShopping } from "react-icons/fa6";
 import Chart from "react-apexcharts";
 import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import seller from "../../assets/seller.png";
-import { get_admin_dashboard_data } from "../../store/Reducers/dashboardReducer";
 import moment from "moment";
+import { get_admin_dashboard_data } from "../../redux/store/Reducers/dashboardReducer";
 
 const AdminDashboard = () => {
   const dispatch = useDispatch();
@@ -198,7 +197,7 @@ const AdminDashboard = () => {
                       ) : (
                         <img
                           className="w-full rounded-full h-full shadow-lg"
-                          src={seller}
+                          src="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
                           alt=""
                         />
                       )}
