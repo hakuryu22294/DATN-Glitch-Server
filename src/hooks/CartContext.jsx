@@ -5,7 +5,7 @@ export const CartContext = createContext();
 export const CartProvider = ({ children }) => {
     const [cart, setCart] = useState(JSON.parse(localStorage.getItem('cart')) || []);
 
-    const addToCart = (product) => {
+      const addToCart = (product) => {
         const existingProductIndex = cart.findIndex(item => item.metadata._id === product.metadata._id);
 
         let updatedCart;
@@ -16,30 +16,34 @@ export const CartProvider = ({ children }) => {
             updatedCart = [...cart, product];
         }
 
-        setCart(updatedCart);  
+        setCart(updatedCart);
         localStorage.setItem('cart', JSON.stringify(updatedCart));
+   
         showToastSuccess("Đã thêm sản phẩm vào giỏ hàng")
+    
     };
 
     const updateCart = (id, delta) => {
-        let updatedCart = [...cart];  
-        const productIndex = updatedCart.findIndex(item => item.metadata._id === id);
-
-        if (productIndex >= 0) {
-            updatedCart[productIndex].quantity += delta;
-            if (updatedCart[productIndex].quantity <= 0) {
-                updatedCart.splice(productIndex, 1);
-            }
-        }
-
-        setCart(updatedCart);  
+        const updatedCart = cart.map(item =>
+            item.metadata._id === id ? { ...item, quantity: Math.max(item.quantity + delta, 0) } : item
+        ).filter(item => item.quantity > 0);
+        setCart(updatedCart);
         localStorage.setItem('cart', JSON.stringify(updatedCart));
     };
+    
+ const deleteProductCart = (id)=>{
+
+
+    const deleteCart  = cart.filter(productCart => productCart.metadata._id !== id)
+    setCart(deleteCart)
+    localStorage.setItem('cart',JSON.stringify(deleteCart))
+ }
 
     const carts = {
         cart, 
         addToCart,
-        updateCart
+        updateCart,
+        deleteProductCart
     }
 
     return (
