@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import ProductService from "../services/productService/productService";
 import Header from "../layouts/Header";
 import Navigation from "../layouts/Navigation";
@@ -7,8 +7,9 @@ import { formatCurrency } from "../config/formatCurrency";
 import Policy from "../components/Detail/Policy";
 import Description from "../components/Detail/Description";
 import ButtonDefault from "../components/buttons/ButtonDefault";
-import { showToastSuccess } from "../config/toastConfig";
+import { CartContext } from "../hooks/CartContext";
 const Detailproduct = () => {
+  const { addToCart , updateCart } = useContext(CartContext)
   const { id } = useParams();
   const [detailproduct, setDetailproduct] = useState({});
   const [pickColor, setPickColor] = useState(null);
@@ -25,34 +26,10 @@ const Detailproduct = () => {
   const handlePickColor = (color) => {
     setPickColor(pickColor === color ? null : color);
   };
-
-  const addToCart = () => {
-    let cart = JSON.parse(localStorage.getItem('cart')) || [];
-    const existingProductIndex = cart.findIndex(item => item.id === detailproduct.id);
-
-    if (existingProductIndex >= 0) {
-      cart[existingProductIndex].quantity += quantity;
-    } else {
-      cart.push({ ...detailproduct, quantity });
-    }
-    showToastSuccess(`Đã thêm sản phẩm vào giỏ hàng`)
-
-    localStorage.setItem('cart', JSON.stringify(cart));
+  const handleAddToCart = () => {
+    addToCart({ ...detailproduct, quantity });
   };
 
-  const updateCart = (id, delta) => {
-    let cart = JSON.parse(localStorage.getItem('cart')) || [];
-    const productIndex = cart.findIndex(item => item.id === id);
-
-    if (productIndex >= 0) {
-      cart[productIndex].quantity += delta;
-      if (cart[productIndex].quantity <= 0) {
-        cart.splice(productIndex, 1);
-      }
-    }
-
-    localStorage.setItem('cart', JSON.stringify(cart));
-  };
 
   return (
     <>
@@ -101,7 +78,7 @@ const Detailproduct = () => {
                     className="bg-[#dbdbdb] w-[30px] rounded-[4px] text-[20px]"
                     onClick={() => setQuantity(prev => {
                       const newQuantity = Math.max(prev - 1, 0);
-                      updateCart(detailproduct.id, newQuantity - prev); 
+                      updateCart(detailproduct.id, newQuantity - prev);
                       return newQuantity;
                     })}
                   >
@@ -129,7 +106,7 @@ const Detailproduct = () => {
                 <ButtonDefault
                   nameButton="Thêm vào giỏ hàng"
                   style="bg-[#e7e8ea] p-3 rounded-[5px] w-[200px] text-[#3F4B53] font-bold"
-                  onClick={()=>addToCart()}
+                  onClick={()=>handleAddToCart()}
                 />
                 <ButtonDefault
                   nameButton="Mua ngay"
