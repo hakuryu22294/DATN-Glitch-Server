@@ -5,15 +5,18 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import TabUiContext from './hooks/TabUiContext.jsx';
 import ShowUiProvider from './hooks/ShowUiContext.jsx';
 import UserContext from './hooks/UserContext.jsx';
+import CartProvider from './hooks/CartContext.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-            <UserContext>
+ <CartProvider>
+     <UserContext>
         <ShowUiProvider>
                 <TabUiContext>
                         <Router>
-                                <App />
+                            <App />
                         </Router>
                 </TabUiContext>
         </ShowUiProvider>
-            </UserContext>
+      </UserContext>
+ </CartProvider>
 )
