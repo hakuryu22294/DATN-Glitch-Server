@@ -6,23 +6,23 @@ const findAllCategorie = async ({ searchValue, parPage, skipPage }) => {
     categories = await Category.find({
       $text: {
         $search: searchValue,
-      }
-        .skip(skipPage)
-        .limit(parPage)
-        .sort({ createdAt: -1 }),
-    }).lean();
+      },
+    })
+      // .skip(parseInt(skipPage))
+      // .limit(parseInt(parPage))
+      .sort({ createdAt: -1 });
     total = await Category.countDocuments({
       $text: {
         $search: searchValue,
       },
-    }).countDocuments();
+    });
   } else {
-    categories = await Category.find({})
-      .skip(skipPage)
-      .limit(parseInt(parPage))
-      .sort({ createdAt: -1 })
-      .lean();
-    total = await Category.countDocuments().countDocuments();
+    categories = await Category.find({});
+    // .skip(skipPage)
+    // .limit(parseInt(parPage))
+    // .sort({ createdAt: -1 })
+    // .lean();
+    total = await Category.find({}).countDocuments();
   }
   return { categories, total };
 };

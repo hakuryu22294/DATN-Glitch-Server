@@ -29,7 +29,7 @@ class DashBoardController {
         totalSeller,
         recentOrders,
       },
-    });
+    }).send(res);
   };
   get_seller_dashboard_data = async (req, res) => {
     const id = req;
@@ -80,7 +80,7 @@ class DashBoardController {
         totalPendingOrder,
         recentsOrders,
       },
-    });
+    }).send(res);
   };
 }
 

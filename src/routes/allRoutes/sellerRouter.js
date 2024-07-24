@@ -11,7 +11,6 @@ sellerRouter.use(checkPermisson("admin", "seller"));
 sellerRouter.get("/", asyncHandler(SellerController.get_all_seller));
 
 sellerRouter.get("/:sellerId", asyncHandler(SellerController.get_seller));
-sellerRouter.use(checkPermisson("seller"));
 sellerRouter.patch(
   "/update/:sellerId",
   asyncHandler(SellerController.seller_status_update)
