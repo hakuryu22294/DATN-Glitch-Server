@@ -1,3 +1,4 @@
+const { Types } = require("mongoose");
 const { Product } = require("../product.schema");
 
 const findProductByName = async ({ name }) => {
@@ -9,7 +10,8 @@ const findProductById = async ({ id }) => {
 };
 
 const findAllProduct = async ({ sellerId, searchValue, parPage, skipPage }) => {
-  let products, total;
+  let products = [],
+    total = 0;
   if (searchValue) {
     products = await Product.find({
       $text: {
@@ -27,13 +29,12 @@ const findAllProduct = async ({ sellerId, searchValue, parPage, skipPage }) => {
       },
     }).countDocuments();
   } else {
-    products = await Product.find({ sellerId: sellerId })
-      .skip(skipPage)
-      .limit(parseInt(parPage))
-      .sort({ createdAt: -1 })
-      .lean();
+    products = await Product.find({
+      sellerId: sellerId,
+    });
 
-    total = await Product.countDocuments({
+    console.log(products);
+    total = await Product.find({
       sellerId: sellerId,
     }).countDocuments();
   }

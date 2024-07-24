@@ -18,8 +18,8 @@ class PaymentController {
       const account = await stripe.accounts.create({ type: "express" });
       const accontLink = await stripe.accountLinks.create({
         account: account.id,
-        refresh_url: process.env.REFRESH_URL,
-        return_url: process.env.RETURN_URL,
+        refresh_url: "http://localhost:5173/refresh",
+        return_url: `http://localhost:5173/success?activeCode=${uid}`,
         type: "account_onboarding",
       });
       await Stripe.create({
@@ -37,8 +37,8 @@ class PaymentController {
       const account = await stripe.accounts.create({ type: "express" });
       const accountLink = await stripe.accountLinks.create({
         account: account.id,
-        refresh_url: process.env.REFRESH_URL,
-        return_url: process.env.RETURN_URL,
+        refresh_url: "http://localhost:5173/refresh",
+        return_url: `http://localhost:5173/success?activeCode=${uid}`,
         type: "account_onboarding",
       });
       new SuccessResponse({

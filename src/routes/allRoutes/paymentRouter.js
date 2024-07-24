@@ -10,7 +10,7 @@ paymentRouter.post(
   "/request-confirm",
   PaymentController.payment_request_confirm
 );
-paymentRouter.post(
+paymentRouter.get(
   "/create-stripe-connect-account",
   asyncHandler(PaymentController.create_stripe_connect_acc)
 );

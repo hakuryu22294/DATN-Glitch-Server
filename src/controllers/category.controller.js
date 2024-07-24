@@ -4,15 +4,17 @@ const { BadRequestError } = require("../core/error.response");
 const { default: slugify } = require("slugify");
 const { SuccessResponse } = require("../core/success.response");
 const { findAllCategorie } = require("../models/repo/category.repo");
+const { Category } = require("../models/category.schema");
 
 class CategoryController {
   add_category = async (req, res) => {
-    const form = formidable({});
+    const form = formidable();
 
     form.parse(req, async (err, fields, files) => {
       if (err) {
-        throw new BadRequestError(err.message);
+        throw new BadRequestError("Something went wrong");
       } else {
+        console.log(fields, files);
         let { name } = fields;
         let { image } = files;
         name = name.trim();
@@ -24,6 +26,7 @@ class CategoryController {
           const newCategory = await Category.create({
             name,
             image: result.url,
+            slug,
           });
           new SuccessResponse({
             message: "Category created successfully",
@@ -46,6 +49,7 @@ class CategoryController {
       parPage,
       skipPage,
     });
+    console.log(newCategories);
     if (!newCategories) {
       throw new BadRequestError("Category don't found");
     }
@@ -53,7 +57,7 @@ class CategoryController {
     new SuccessResponse({
       message: "Get all category successfully",
       data: newCategories,
-    });
+    }).send(res);
   };
 }
 

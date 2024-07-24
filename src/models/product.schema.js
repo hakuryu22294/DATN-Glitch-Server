@@ -6,7 +6,7 @@ const productSchema = new Schema(
   {
     sellerId: {
       type: Schema.Types.ObjectId,
-      ref: "Seller",
+      required: true,
     },
     name: {
       type: String,
@@ -52,7 +52,6 @@ const productSchema = new Schema(
     },
     rating: {
       type: Number,
-      required: true,
       min: 0,
       max: 5,
     },

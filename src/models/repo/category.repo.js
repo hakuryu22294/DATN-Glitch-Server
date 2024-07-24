@@ -1,3 +1,5 @@
+const { Category } = require("../category.schema");
+
 const findAllCategorie = async ({ searchValue, parPage, skipPage }) => {
   let categories, total;
   if (searchValue) {

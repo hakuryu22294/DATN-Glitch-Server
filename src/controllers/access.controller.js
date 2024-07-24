@@ -4,19 +4,23 @@ const bcrypt = require("bcryptjs");
 const { Seller } = require("../models/seller.schema");
 const formidable = require("formidable");
 const { cloudinary } = require("../configs/cloudinary.config");
+const { SuccessResponse } = require("../core/success.response");
+const { BadRequestError } = require("../core/error.response");
 class AccessController {
   admin_login = async (req, res) => {
     const { email, password } = req.body;
-    const admin = Admin.findOne({ email });
+    const admin = await Admin.findOne({ email });
+    console.log(admin);
     if (!admin) throw new BadRequestError("Admin don't exists");
     const match = await bcrypt.compare(password, admin.password);
+    console.log(match);
     if (!match) throw new BadRequestError("Password is not valid");
     const token = await createTokenPair({
       id: admin._id,
       role: admin.role,
     });
     if (!token) throw new BadRequestError("Creat token failed");
-    res.cookie("access_token", token, {
+    res.cookie("accessToken", token, {
       httpOnly: true,
       expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
     });
@@ -36,7 +40,7 @@ class AccessController {
       role: seller.role,
     });
     if (!token) throw new BadRequestError("Creat token failed");
-    res.cookie("access_token", token, {
+    res.cookie("accessToken", token, {
       httpOnly: true,
       expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
     });
@@ -63,7 +67,7 @@ class AccessController {
       role: createSeller.role,
     });
     if (!token) throw new BadRequestError("Creat token failed");
-    res.cookie("access_token", token, {
+    res.cookie("accessToken", token, {
       httpOnly: true,
       expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
     });
@@ -73,8 +77,10 @@ class AccessController {
     });
   };
   get_user = async (req, res) => {
-    const { id, role } = req;
-    let userGet = null;
+    const { id, role } = req.user;
+    console.log(req.user);
+    console.log(id, role);
+    let userGet = {};
     if (role === "admin") {
       userGet = await Admin.findById({ _id: id });
     } else if (role === "seller") {
@@ -86,7 +92,9 @@ class AccessController {
     }).send(res);
   };
   profile_image_upload = async (req, res) => {
-    const { id } = req;
+    console.log(req.user);
+    const { id } = req.user;
+
     const form = formidable({ multiples: true });
     form.parse(req, async (err, _, files) => {
       const { image } = files;
@@ -112,7 +120,7 @@ class AccessController {
   };
   profile_info_add = async (req, res) => {
     const { division, district, shopName, subDistrict } = req.body;
-    const { id } = req;
+    const { id } = req.user;
     await Seller.findByIdAndUpdate(
       { _id: id },
       {
@@ -132,7 +140,7 @@ class AccessController {
     }).send(res);
   };
   logout = async (req, res) => {
-    res.cookie("access_token", null, {
+    res.cookie("accessToken", null, {
       expires: new Date(Date.now() + 1000),
       httpOnly: true,
     });

@@ -12,7 +12,7 @@ const { SuccessResponse } = require("../core/success.response");
 const { default: slugify } = require("slugify");
 class ProductController {
   async add_product(req, res) {
-    const { id } = req;
+    const { id } = req.user;
     const form = formidable({ multiples: true });
     form.parse(req, async (err, fields, files) => {
       let {
@@ -32,6 +32,7 @@ class ProductController {
       for (let i = 0; i < images.length; i++) {
         const result = await cloudinary.uploader.upload(images[i].filepath, {
           folder: "products",
+          transformations: [{ width: 500, height: 500, crop: "fill" }],
         });
         allImgUrl = [...allImgUrl, result.url];
       }
@@ -51,6 +52,7 @@ class ProductController {
         price: parseInt(price),
         images: allImgUrl,
         brand: brand.trim(),
+        slug: slugify(name, { lower: true }),
       });
       if (!newProduct) throw new BadRequestError("Product don't created");
       new SuccessResponse({
@@ -62,7 +64,8 @@ class ProductController {
 
   async get_product(req, res) {
     const { page, searchValue, parPage } = req.query;
-    const { id } = req;
+    const { id } = req.user;
+    console.log(id);
     const skipPage = parseInt(parPage) * parseInt(page) - 1;
 
     const { products, total } = await findAllProduct({
@@ -74,11 +77,11 @@ class ProductController {
     new SuccessResponse({
       message: "Get product successfully",
       data: { products, total },
-    });
+    }).send(res);
   }
   async get_one_product(req, res) {
     const { productId } = req.params;
-    const product = await findProductById({ id: productId });
+    const product = await findProductById({ _id: productId });
     new SuccessResponse({
       message: "Get product successfully",
       data: product,

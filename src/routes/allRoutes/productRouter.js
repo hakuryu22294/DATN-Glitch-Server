@@ -2,7 +2,9 @@ const { Router } = require("express");
 const productRouter = Router();
 const ProductController = require("../../controllers/product.controller");
 const { asyncHandler } = require("../../helpers/asyncHandler");
+const { authentication } = require("../../auth/authUtils");
 
+productRouter.use(authentication);
 productRouter.get("/", asyncHandler(ProductController.get_product));
 
 productRouter.get(

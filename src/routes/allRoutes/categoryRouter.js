@@ -7,10 +7,7 @@ const categoryRouter = Router();
 categoryRouter.get("/", asyncHandler(CategoryController.get_all_category));
 
 categoryRouter.use(authentication);
-categoryRouter.post(
-  "/",
-  checkPermisson("admin"),
-  asyncHandler(CategoryController.add_category)
-);
+categoryRouter.use(checkPermisson("admin"));
+categoryRouter.post("/", asyncHandler(CategoryController.add_category));
 
 module.exports = categoryRouter;

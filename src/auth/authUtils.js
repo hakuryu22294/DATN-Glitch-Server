@@ -10,39 +10,14 @@ const createTokenPair = async (payload) => {
   return accessToken;
 };
 
-const getTokenFromHeader = (req) => {
-  if (
-    req?.headers?.authorization &&
-    req?.headers?.authorization.startsWith("Bearer")
-  ) {
-    return req.headers?.authorization.split(" ")[1];
-  }
-};
 const authentication = asyncHandler(async (req, res, next) => {
-  const accessToken = getTokenFromHeader(req);
+  const accessToken = req.cookies.accessToken;
   if (!accessToken) {
-    throw new UnauthorizedError("Invalid Request");
+    throw new UnauthorizedError("Please login first 1");
   }
-  try {
-    const decode = JWT.verify(
-      accessToken,
-      process.env.SECRET_KEY,
-      (err, decode) => {
-        if (err) {
-          throw new UnauthorizedError("Invalid Token 1");
-        }
-        return decode;
-      }
-    );
-    req.user = decode;
-    console.log(decode);
-    if (!decode) {
-      throw new UnauthorizedError("Invalid Token 2");
-    }
-    next();
-  } catch (err) {
-    throw err;
-  }
+  const payload = JWT.verify(accessToken, process.env.SECRET_KEY);
+  req.user = payload;
+  next();
 });
 
 const checkPermisson = (...role) => {
@@ -57,7 +32,6 @@ const checkPermisson = (...role) => {
 
 module.exports = {
   createTokenPair,
-  getTokenFromHeader,
   authentication,
   checkPermisson,
 };

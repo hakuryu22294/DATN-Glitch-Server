@@ -2,6 +2,8 @@ const express = require("express");
 const morgan = require("morgan");
 const helmet = require("helmet");
 const compression = require("compression");
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
 const app = express();
 
 //init middlewares
@@ -10,6 +12,14 @@ app.use(helmet());
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
+app.use(cookieParser());
+
 //init mongodb
 require("./dbs/init.mongodb");
 const { checkOverloadConect } = require("./helpers/check.connect");
