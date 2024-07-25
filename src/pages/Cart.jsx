@@ -7,23 +7,25 @@ import ButtonDefault from "../components/buttons/ButtonDefault";
 import { CartContext } from "../hooks/CartContext";
 import { formatCurrency } from "../config/formatCurrency";
 const Cart = () => {
-    const { cart, updateCart , deleteProductCart } = useContext(CartContext);
+    const { cart , updateCart , deleteProductCart } = useContext(CartContext);
     const [subtotal, setSubtotal] = useState(0);
 
     useEffect(() => {
         const calculateSubtotal = () => {
-            const total = cart.reduce((acc, item) => acc + item.metadata.price * item.quantity, 0);
+            const total = cart.reduce((acc, item) => acc + item?.price * item.quantity, 0);
             setSubtotal(total);
         };
         calculateSubtotal();
     }, [cart]);
     console.log(subtotal);
+
+  
     return (
         <>
             <Header />
             <Navigation />
             <div className="p-5 bg-[#F2F3F4]">
-                {cart && cart.length > 0 ? (
+                {cart && cart?.length > 0 ? (
                     <>
                         <h1 className="font-bold text-[25px]">Giỏ hàng của bạn ({cart?.length})</h1>
                         <div className="bg-[#fff] shadow p-3 rounded-[3px]">
@@ -31,42 +33,42 @@ const Cart = () => {
                                 <img className="w-[50px] " src="https://media3.scdn.vn/img4/2023/02_01/qnTJ0KIyWhbU3ST9aSvM_simg_34545b_120x60_maxb.jpg" alt="" />
                                 <span className="block font-bold cursor-pointer">Chat với shop</span>
                             </div>
-                            {cart && cart.map((product) => (
+                            {cart && cart?.map((product) => (
                                 <div className="mt-[30px] flex justify-between" key={product.id}>
                                     <div className="flex gap-4">
                                         <div>
-                                            <img className="w-[100px]" src="https://media3.scdn.vn/img4/2022/05_10/QNBeWJXDpPRX2aH4EEDh_simg_de2fe0_500x500_maxb.jpg" alt="" />
+                                            <img className="w-[100px]" src={product?.image[0]} alt={product?.image[0]} />
                                         </div>
                                         <div>
                                             <span className="block w-max bg-[#E2E6F2] text-[#1330A2] px-2 rounded-[50px] text-[13px] font-bold">Mua trước trả sau</span>
-                                            <span className="bock pt-2">aos thun cotton nam nùx</span>
+                                            <span className="bock pt-2">{product?.name}</span>
                                         </div>
                                     </div>
                                     <div className="flex w-[30%] gap-5 items-center">
-                                        <span className="font-bold"> {formatCurrency(product?.metadata?.price)}</span>
+                                        <span className="font-bold"> {formatCurrency(product?.price)}</span>
                                         <div className="flex">
                                             <button
                                                 className="bg-[#dbdbdb] w-[30px] rounded-[4px] text-[20px] h-max"
-                                                onClick={() => updateCart(product.metadata._id, -1)}
+                                                onClick={() => updateCart(product?.id, -1)}
                                             >
                                                 -
                                             </button>
                                             <input
                                                 type="number"
                                                 className="w-[40px]  no-spin pl-4 p-1 mx-2  h-max"
-                                                value={product.quantity}
+                                                value={product?.quantity}
                                                 readOnly
                                             />
                                             <button
                                                 className="bg-[#dbdbdb] w-[30px] rounded-[4px] text-[20px]  h-max"
-                                                onClick={() => updateCart(product.metadata._id, 1)}
+                                                onClick={() => updateCart(product?.id, 1)}
                                                 >
                                                 +
                                             </button>
                                         </div>
                                         <div>
                                             <FaRegTrashCan className="text-[20px] cursor-pointer" 
-                                                onClick={()=>deleteProductCart(product.metadata._id)}
+                                                onClick={()=>deleteProductCart(product.id)}
                                             />
                                         </div>
                                     </div>
@@ -85,7 +87,6 @@ const Cart = () => {
                                         />
                                     </div>
                                 </div>
-
                             </div>
                         </div>
                     </>
@@ -112,4 +113,3 @@ const Cart = () => {
 };
 
 export default Cart;
-
