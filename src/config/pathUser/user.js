@@ -1,10 +1,11 @@
 const PathUser = {
      NotFound:"*",
      Home:'/',
-      Account:'/account',
+     Account:'/account',
      VertifyAccount:'/vertify',
      DetailProduct:'/detail/:id',
      Cart:'/cart',
+     Shop:'/shop/:id',
 
 
 }
