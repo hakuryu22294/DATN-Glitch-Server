@@ -5,6 +5,7 @@ import VertifyAccount from "../pages/VertifyAccount";
 import Detailproduct from "../contents/Home/Detailproduct";
 import Cart from "../pages/Cart";
 import Account from "../pages/Account";
+import Shop from "../pages/Shop";
 
 const UserRouter = [
 {
@@ -30,7 +31,11 @@ const UserRouter = [
         {
         path: PathUser.Account,
         component: Account,
-    }
+    },
+       {
+        path: PathUser.Shop,
+        component: Shop,
+    },
     
 ]
 export default UserRouter
