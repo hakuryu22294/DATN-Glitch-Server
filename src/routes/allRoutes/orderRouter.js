@@ -4,24 +4,33 @@ const OrderController = require("../../controllers/order.controller");
 const { checkPermisson, authentication } = require("../../auth/authUtils");
 
 const orderRouter = Router();
-orderRouter.use(authentication);
-orderRouter.post("/place-order", asyncHandler(OrderController.place_order));
+orderRouter.post(
+  "/place-order",
+  authentication,
+  asyncHandler(OrderController.place_order)
+);
 orderRouter.get(
   "/get-dashboard-data/:userId",
+  authentication,
   asyncHandler(OrderController.get_customer_dashboard)
 );
 orderRouter.get(
   "/get-orders/:customerId/:status",
+  authentication,
   asyncHandler(OrderController.get_orders)
 );
 
 orderRouter.get(
   "/get-order-details/:orderId",
+  authentication,
   asyncHandler(OrderController.get_order_details)
 );
 
-orderRouter.use(checkPermisson("admin"));
-orderRouter.get("/admin/orders", OrderController.get_admin_orders);
+orderRouter.get(
+  "/admin/orders",
+  checkPermisson("admin"),
+  OrderController.get_admin_orders
+);
 orderRouter.get("/admin/order/:orderId", OrderController.get_admin_order);
 orderRouter.put(
   "/admin/order-status/update/:orderId",

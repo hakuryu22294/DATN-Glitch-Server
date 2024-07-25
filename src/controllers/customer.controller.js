@@ -4,6 +4,7 @@ const { Seller } = require("../models/seller.schema");
 const { createTokenPair } = require("../auth/authUtils");
 const { method } = require("lodash");
 const { SuccessResponse } = require("../core/success.response");
+const { BadRequestError } = require("../core/error.response");
 
 class CustomerController {
   register_ctm = async (req, res) => {
@@ -29,7 +30,7 @@ class CustomerController {
       name: createCustomer.name,
       method: createCustomer.method,
     });
-    res.cookie("access_token", token, {
+    res.cookie("accessToken", token, {
       httpOnly: true,
       expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
     });
@@ -50,7 +51,7 @@ class CustomerController {
       name: customer.name,
       method: customer.method,
     });
-    res.cookie("access_token", token, {
+    res.cookie("accessToken", token, {
       httpOnly: true,
       expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
     });
@@ -60,7 +61,7 @@ class CustomerController {
     }).send(res);
   };
   logout_ctm = async (req, res) => {
-    res.cookie("access_token", null, {
+    res.cookie("accessToken", null, {
       expires: new Date(Date.now() + 1000),
     });
   };

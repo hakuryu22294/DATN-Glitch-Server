@@ -1,8 +1,12 @@
+const { Types } = require("mongoose");
 const { SuccessResponse } = require("../core/success.response");
 const { Category } = require("../models/category.schema");
 const { Product } = require("../models/product.schema");
 const QueryProduct = require("../models/repo/home.repo");
 const { Review } = require("../models/review.schema");
+
+const moment = require("moment");
+const { BadRequestError } = require("../core/error.response");
 
 class HomeController {
   formateProduct = (products) => {
@@ -67,27 +71,24 @@ class HomeController {
         latestProduct,
         priceRange,
       },
-    });
+    }).send(res);
   };
   query_products = async (req, res) => {
     const parPage = 12;
     req.query.parPage = parPage;
-    const product = await Product.find({}).sort({ createAt: -1 });
-    const totalProduct = new QueryProduct(product, req.query)
+    const products = await Product.find({}).sort({ createAt: -1 });
+    const totalProduct = new QueryProduct(products, req.query)
       .categoriesQuery()
       .ratingQuery()
       .searchQuery()
       .priceQuery()
       .sortByPrice()
       .countProducts();
-    const result = new QueryProduct(product, req.query)
+    const result = new QueryProduct(products, req.query)
       .categoriesQuery()
       .ratingQuery()
       .searchQuery()
       .priceQuery()
-      .sortByPrice()
-      .skip()
-      .limit()
       .getProducts();
 
     new SuccessResponse({
@@ -97,7 +98,7 @@ class HomeController {
         totalProduct,
         parPage,
       },
-    });
+    }).send(res);
   };
   product_details = async (req, res) => {
     const { slug } = req.params;
@@ -159,7 +160,7 @@ class HomeController {
 
     new SuccessResponse({
       message: "Submit review successfully",
-    });
+    }).send(res);
   };
   get_reviews = async (req, res) => {
     const { productId } = req.params;
@@ -222,20 +223,21 @@ class HomeController {
         }
       }
     }
-    const getAll = await Review.find({ _id: productId });
+    const getAll = await Review.find({ productId: productId });
 
-    const reviews = await Review.find({ _id: productId })
+    const reviews = await Review.find({ productId: productId })
       .sort({ date: -1 })
       .skip(skipPage)
       .limit(limit);
+    console.log(reviews, getAll.length, ratingReview);
     new SuccessResponse({
       message: "Get reviews successfully",
       data: {
         reviews,
         totalReview: getAll.length,
-        getAll,
+        ratingReview,
       },
-    });
+    }).send(res);
   };
 }
 

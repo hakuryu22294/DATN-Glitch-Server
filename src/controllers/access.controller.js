@@ -74,7 +74,7 @@ class AccessController {
     new SuccessResponse({
       message: "Seller created successfully",
       data: token,
-    });
+    }).send(res);
   };
   get_user = async (req, res) => {
     const { id, role } = req.user;

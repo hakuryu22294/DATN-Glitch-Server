@@ -5,15 +5,15 @@ const { authentication, checkPermisson } = require("../../auth/authUtils");
 
 const dashboardRouter = Router();
 
-dashboardRouter.use(authentication);
-dashboardRouter.use(checkPermisson("admin", "seller"));
 dashboardRouter.get(
   "/seller",
+  checkPermisson("admin", "seller"),
   asyncHandler(DashboardController.get_seller_dashboard_data)
 );
-dashboardRouter.use(checkPermisson("admin"));
+
 dashboardRouter.get(
   "/admin",
+  checkPermisson("admin"),
   asyncHandler(DashboardController.get_admin_dashboard_data)
 );
 

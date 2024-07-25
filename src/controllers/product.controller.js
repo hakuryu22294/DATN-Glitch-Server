@@ -112,7 +112,7 @@ class ProductController {
     new SuccessResponse({
       message: "Update product successfully",
       data: updateProduct,
-    });
+    }).send(res);
   }
   async product_img_update(req, res) {
     const form = formidable({ multiples: true });

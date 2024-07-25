@@ -11,7 +11,8 @@ const createTokenPair = async (payload) => {
 };
 
 const authentication = asyncHandler(async (req, res, next) => {
-  const accessToken = req.cookies.accessToken;
+  const accessToken = req?.cookies?.accessToken;
+  console.log(accessToken);
   if (!accessToken) {
     throw new UnauthorizedError("Please login first 1");
   }

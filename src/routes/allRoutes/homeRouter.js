@@ -3,7 +3,7 @@ const { asyncHandler } = require("../../helpers/asyncHandler");
 const { Router } = require("express");
 
 const homeRouter = Router();
-homeRouter.get("/get-categoriess", HomeController.get_categories);
+homeRouter.get("/get-categories", HomeController.get_categories);
 homeRouter.get("/get-products", HomeController.get_products);
 homeRouter.get(
   "/price-range-latest-product",

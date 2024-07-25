@@ -14,9 +14,9 @@ customerRouter.post(
   "/customer-login",
   asyncHandler(CustomerController.login_ctm)
 );
-customerRouter.use(authentication);
 customerRouter.get(
   "/customer-logout",
+  authentication,
   asyncHandler(CustomerController.logout_ctm)
 );
 

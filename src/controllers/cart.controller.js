@@ -3,10 +3,12 @@ const { SuccessResponse } = require("../core/success.response");
 const { Cart } = require("../models/cart.schema");
 const { find } = require("lodash");
 const { Wishlist } = require("../models/wishlist.shema");
+const { BadRequestError } = require("../core/error.response");
 
 class CartController {
   async add_to_cart(req, res) {
     const { userId, productId, quantity } = req.body;
+    console.log(`userId:${userId}`);
     const product = await Cart.findOne({
       $and: [
         {
@@ -74,30 +76,30 @@ class CartController {
       },
       {
         $lookup: {
-          from: "products",
+          from: "Products",
           localField: "productId",
           foreignField: "_id",
-          as: "product",
+          as: "products",
         },
       },
     ]);
     let buyItems = 0,
       calcPrice = 0,
       productsCount = 0;
-    const outOfStockProduct = cartProducts.filter(
-      (p) => p.product[0].stock < p.quantity
-    );
+    const outOfStockProduct = cartProducts.filter((p) => {
+      return p.products[0].stock < p.quantity;
+    });
     for (let i = 0; i < cartProducts.length; i++) {
       productsCount = productsCount + cartProducts[i].quantity;
     }
     const stockProduct = cartProducts.filter(
-      (p) => p.product[0].stock > p.quantity
+      (p) => p.products[0].stock > p.quantity
     );
     for (let i = 0; i < stockProduct.length; i++) {
       const { quantity } = stockProduct[i];
       productsCount = buyItems + quantity;
       buyItems += quantity;
-      const { price, discount } = stockProduct[i].product[0];
+      const { price, discount } = stockProduct[i].products[0];
       calcPrice += quantity * (price - Math.floor(price * discount) / 100);
       if (discount !== 0) {
         calcPrice += quantity * (price - Math.floor(price * discount) / 100);
@@ -111,8 +113,8 @@ class CartController {
     ];
     for (let i = 0; i < unique.length; i++) {
       let price = 0;
-      for (let j = 0; i < stockProduct.length; j++) {
-        const tempProduct = stockProduct[j].product[0];
+      for (let j = 0; j < stockProduct.length; j++) {
+        const tempProduct = stockProduct[j].products[0];
         if (unique[i] === tempProduct.sellerId.toString()) {
           let pri = 0;
           if (tempProduct.discount !== 0) {
@@ -153,7 +155,7 @@ class CartController {
           cartProducts: p,
           price: calcPrice,
           productsCount,
-          shippingFee: 20 * p.length,
+          shippingFee: 20000 * p.length,
           outOfStockProduct,
           buyItems,
         },
@@ -219,7 +221,7 @@ class CartController {
     new SuccessResponse({
       message: "Remove whishlist successfully",
       data: whistListRemove,
-    });
+    }).send(res);
   };
 }
 

@@ -9,7 +9,6 @@ class QueryProduct {
     this.products = this.query.category
       ? this.products.filter((c) => c.category === this.query.category)
       : this.products;
-
     return this;
   };
   ratingQuery = () => {
@@ -32,13 +31,15 @@ class QueryProduct {
         )
       : this.products;
     return this;
-
-    return this;
   };
   priceQuery = () => {
     this.products = this.products.filter(
-      (p) => p.price >= this.query.lowPrice && p.price <= this.query.highPrice
+      (p) =>
+        (parseInt(p.price) >= parseInt(this.query.lowPrice)) &
+        (parseInt(p.price) <= parseInt(this.query.highPrice))
     );
+    console.log(this.products);
+    return this;
   };
   sortByPrice = () => {
     if (this.query.sortPrice) {
@@ -56,9 +57,13 @@ class QueryProduct {
   };
   skip = () => {
     let { pageNumber } = this.query;
+    if (pageNumber === 1) {
+      return this;
+    }
     const skipPage = (parseInt(pageNumber) - 1) * this.query.parPage;
     let skipProduct = [];
-
+    console.log(pageNumber, skipPage);
+    console.log(this.products);
     for (let i = skipPage; i < this.products.length; i++) {
       skipProduct.push(this.products[i]);
     }
@@ -80,6 +85,7 @@ class QueryProduct {
   };
 
   getProducts = () => {
+    console.log(this.products);
     return this.products;
   };
 

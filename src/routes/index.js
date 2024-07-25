@@ -9,10 +9,10 @@ const managerAuthRouter = require("./allRoutes/managerAuthRouter");
 const paymentRouter = require("./allRoutes/paymentRouter");
 const orderRouter = require("./allRoutes/orderRouter");
 const dashboardRouter = require("./allRoutes/dashboardRouter");
-const customerAuthRouter = require("./allRoutes/customerAtuthRouter");
 const customerRouter = require("./allRoutes/customerRouter");
 const router = Router();
 
+router.use("/customer", customerRouter);
 router.use("/product", productRouter);
 router.use("/category", categoryRouter);
 router.use("/seller", sellerRouter);
@@ -23,7 +23,5 @@ router.use("/manager", managerAuthRouter);
 router.use("/payment", paymentRouter);
 router.use("/order", orderRouter);
 router.use("/dashboard", dashboardRouter);
-router.use("/customer-aut", customerAuthRouter);
-router.use("/customer", customerRouter);
 
 module.exports = router;

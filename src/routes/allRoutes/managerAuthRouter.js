@@ -17,16 +17,21 @@ managerAuthRouter.post(
   "/seller/register",
   asyncHandler(AccessController.seller_register)
 );
-managerAuthRouter.use(authentication);
 
 managerAuthRouter.post(
   "/profile-image-upload",
+  authentication,
   AccessController.profile_image_upload
 );
 
-managerAuthRouter.get("/profile-info", asyncHandler(AccessController.get_user));
+managerAuthRouter.get(
+  "/profile-info",
+  authentication,
+  asyncHandler(AccessController.get_user)
+);
 managerAuthRouter.post(
   "/profile-info-add",
+  authentication,
   asyncHandler(AccessController.profile_info_add)
 );
 managerAuthRouter.get("/logout", asyncHandler(AccessController.logout));
