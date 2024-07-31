@@ -15,7 +15,7 @@ orderRouter.get(
   asyncHandler(OrderController.get_customer_dashboard)
 );
 orderRouter.get(
-  "/get-orders/:customerId/:status",
+  "/get-orders/:userId/:status",
   authentication,
   asyncHandler(OrderController.get_orders)
 );

@@ -18,11 +18,14 @@ sellerRouter.get(
   checkPermisson("admin", "seller"),
   asyncHandler(SellerController.get_seller)
 );
-sellerRouter.patch(
+sellerRouter.put(
   "/update/:sellerId",
   authentication,
   checkPermisson("admin"),
   asyncHandler(SellerController.seller_status_update)
 );
-
+sellerRouter.get(
+  "/get-deactive",
+  asyncHandler(SellerController.get_deactive_seller)
+);
 module.exports = sellerRouter;

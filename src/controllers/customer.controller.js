@@ -2,7 +2,6 @@ const { Customer } = require("../models/customer.schema");
 const bcrypt = require("bcryptjs");
 const { Seller } = require("../models/seller.schema");
 const { createTokenPair } = require("../auth/authUtils");
-const { method } = require("lodash");
 const { SuccessResponse } = require("../core/success.response");
 const { BadRequestError } = require("../core/error.response");
 
@@ -20,14 +19,11 @@ class CustomerController {
       method: "menualy",
     });
     if (!createCustomer) throw new BadRequestError("Customer don't created");
-    const myShop = await Seller.create({
-      _id: createCustomer._id,
-    });
-    if (!myShop) throw new BadRequestError("Shop don't created");
     const token = await createTokenPair({
       id: createCustomer._id,
       email: createCustomer.email,
       name: createCustomer.name,
+      role: createCustomer.role,
       method: createCustomer.method,
     });
     res.cookie("accessToken", token, {
@@ -49,6 +45,7 @@ class CustomerController {
       id: customer._id,
       email: customer.email,
       name: customer.name,
+      role: customer.role,
       method: customer.method,
     });
     res.cookie("accessToken", token, {
@@ -64,6 +61,9 @@ class CustomerController {
     res.cookie("accessToken", null, {
       expires: new Date(Date.now() + 1000),
     });
+    new SuccessResponse({
+      message: "Customer logout successfully",
+    }).send(res);
   };
 }
 

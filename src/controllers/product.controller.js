@@ -7,7 +7,7 @@ const {
 } = require("../models/repo/product.repo");
 const { BadRequestError } = require("../core/error.response");
 const { Product } = require("../models/product.schema");
-const { parseInt } = require("lodash");
+
 const { SuccessResponse } = require("../core/success.response");
 const { default: slugify } = require("slugify");
 class ProductController {
@@ -65,8 +65,7 @@ class ProductController {
   async get_product(req, res) {
     const { page, searchValue, parPage } = req.query;
     const { id } = req.user;
-    console.log(id);
-    const skipPage = parseInt(parPage) * parseInt(page) - 1;
+    const skipPage = parseInt(parPage) * (parseInt(page) - 1);
 
     const { products, total } = await findAllProduct({
       parPage,
@@ -81,7 +80,9 @@ class ProductController {
   }
   async get_one_product(req, res) {
     const { productId } = req.params;
-    const product = await findProductById({ _id: productId });
+    console.log(productId);
+    const product = await findProductById(productId);
+    if (!product) throw new BadRequestError("Product not found");
     new SuccessResponse({
       message: "Get product successfully",
       data: product,

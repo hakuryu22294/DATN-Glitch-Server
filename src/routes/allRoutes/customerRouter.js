@@ -5,17 +5,11 @@ const { authentication } = require("../../auth/authUtils");
 
 const customerRouter = Router();
 
-customerRouter.post(
-  "/customer-register",
-  asyncHandler(CustomerController.register_ctm)
-);
+customerRouter.post("/register", asyncHandler(CustomerController.register_ctm));
 
-customerRouter.post(
-  "/customer-login",
-  asyncHandler(CustomerController.login_ctm)
-);
+customerRouter.post("/login", asyncHandler(CustomerController.login_ctm));
 customerRouter.get(
-  "/customer-logout",
+  "/logout",
   authentication,
   asyncHandler(CustomerController.logout_ctm)
 );

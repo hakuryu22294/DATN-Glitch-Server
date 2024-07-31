@@ -27,6 +27,9 @@ const wishlistSchema = new Schema(
       type: Number,
       required: true,
     },
+    image: {
+      type: String,
+    },
     rating: {
       type: Number,
       required: true,

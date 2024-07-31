@@ -1,30 +1,12 @@
-const { model, Schema } = require("mongoose");
+const mongoose = require("mongoose");
 
-const DOCUMENT_NAME = "Stripe";
-const COLLECTION_NAME = "Stripes";
+const transactionSchema = new mongoose.Schema({
+  orderId: { type: String, required: true },
+  amount: { type: Number, required: true },
+  currency: { type: String, default: "VND" },
+  responseCode: { type: String, required: true },
+  paymentStatus: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+});
 
-const stripeSchema = new Schema(
-  {
-    sellerId: {
-      type: Schema.Types.ObjectId,
-      required: true,
-      ref: "Seller",
-    },
-    stripeId: {
-      type: String,
-      required: true,
-    },
-    code: {
-      type: String,
-      required: true,
-    },
-  },
-  {
-    timestamps: true,
-    collection: COLLECTION_NAME,
-  }
-);
-
-module.exports = {
-  Stripe: model(DOCUMENT_NAME, stripeSchema),
-};
+module.exports = mongoose.model("Transaction", transactionSchema);

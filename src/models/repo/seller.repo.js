@@ -3,37 +3,36 @@ const { Seller } = require("../seller.schema");
 const getAllSeller = async ({ searchValue, parPage, page }) => {
   let skipPage = 0;
   if (parPage && page) {
-    skipPage = parseInt(parPage) * parseInt(page) - 1;
+    skipPage = parseInt(parPage) * (parseInt(page) - 1);
+    console.log(parPage);
   }
-  let seller = [],
+  let sellers = [],
     total = 0;
   if (!searchValue) {
-    seller = await Seller.find({
-      status: "pending",
-    });
-    // .skip(skipPage)
-    // .limit(parseInt(parPage))
-    // .sort({ createdAt: -1 })
-    // .lean();
+    sellers = await Seller.find({})
+      .skip(skipPage)
+      .limit(parseInt(parPage))
+      .sort({ createdAt: -1 });
   } else {
-    seller = await Seller.find({
+    sellers = await Seller.find({
       $text: {
         $search: searchValue,
-      }
-        .skip(skipPage)
-        .limit(parseInt(parPage))
-        .sort({ createdAt: -1 }),
-    }).lean();
+      },
+    })
+      .skip(skipPage)
+      .limit(parseInt(parPage))
+      .sort({ createdAt: -1 });
   }
-  total = seller.length;
+  total = sellers.length;
+  console.log(sellers, total);
 
-  return { seller, total };
+  return { sellers, total };
 };
 
 const getActiveSeller = async ({ searchValue, parPage, page }) => {
   let skipPage = 0;
   if (parPage && page) {
-    skipPage = parseInt(parPage) * parseInt(page) - 1;
+    skipPage = parseInt(parPage) * (parseInt(page) - 1);
   }
   let seller = [],
     total = 0;
@@ -64,7 +63,7 @@ const getActiveSeller = async ({ searchValue, parPage, page }) => {
 const getDeActiveSeller = async ({ searchValue, parPage, page }) => {
   let skipPage = 0;
   if (parPage && page) {
-    skipPage = parseInt(parPage) * parseInt(page) - 1;
+    skipPage = parseInt(parPage) * (parseInt(page) - 1);
   }
   let seller = [],
     total = 0;
@@ -74,8 +73,7 @@ const getDeActiveSeller = async ({ searchValue, parPage, page }) => {
     })
       .skip(skipPage)
       .limit(parseInt(parPage))
-      .sort({ createdAt: -1 })
-      .lean();
+      .sort({ createdAt: -1 });
   } else {
     seller = await Seller.find({
       $text: {

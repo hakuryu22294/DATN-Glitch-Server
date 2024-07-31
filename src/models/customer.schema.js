@@ -27,6 +27,18 @@ const customerSchema = new Schema(
       type: String,
       require: true,
     },
+    status: {
+      type: String,
+      default: "active",
+    },
+    avatar: {
+      type: String,
+    },
+    role: {
+      type: String,
+      default: "user",
+      enum: ["user", "seller"],
+    },
   },
   {
     timestamps: true,

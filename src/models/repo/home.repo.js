@@ -7,7 +7,7 @@ class QueryProduct {
   }
   categoriesQuery = () => {
     this.products = this.query.category
-      ? this.products.filter((c) => c.category === this.query.category)
+      ? this.products.filter((c) => c.category == this.query.category)
       : this.products;
     return this;
   };

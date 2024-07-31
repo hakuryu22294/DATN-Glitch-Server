@@ -5,7 +5,7 @@ const findProductByName = async ({ name }) => {
   return await Product.findOne({ name }).lean();
 };
 
-const findProductById = async ({ id }) => {
+const findProductById = async (id) => {
   return await Product.findOne({ _id: id }).lean();
 };
 
@@ -17,11 +17,11 @@ const findAllProduct = async ({ sellerId, searchValue, parPage, skipPage }) => {
       $text: {
         $search: searchValue,
         sellerId: sellerId,
-      }
-        .skip(skipPage)
-        .limit(parseInt(parPage))
-        .sort({ createdAt: -1 }),
-    }).lean();
+      },
+    })
+      .skip(skipPage)
+      .limit(parseInt(parPage))
+      .sort({ createdAt: -1 });
     total = await Product.countDocuments({
       $text: {
         $search: searchValue,
@@ -31,9 +31,12 @@ const findAllProduct = async ({ sellerId, searchValue, parPage, skipPage }) => {
   } else {
     products = await Product.find({
       sellerId: sellerId,
-    });
+    })
+      .skip(skipPage)
+      .limit(parseInt(parPage))
+      .sort({ createdAt: -1 });
 
-    console.log(products);
+    console.log(skipPage, parPage);
     total = await Product.find({
       sellerId: sellerId,
     }).countDocuments();

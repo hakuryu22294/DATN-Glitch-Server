@@ -6,6 +6,7 @@ const formidable = require("formidable");
 const { cloudinary } = require("../configs/cloudinary.config");
 const { SuccessResponse } = require("../core/success.response");
 const { BadRequestError } = require("../core/error.response");
+const { Customer } = require("../models/customer.schema");
 class AccessController {
   admin_login = async (req, res) => {
     const { email, password } = req.body;
@@ -29,62 +30,34 @@ class AccessController {
       data: token,
     }).send(res);
   };
-  seller_login = async (req, res) => {
-    const { email, password } = req.body;
-    const seller = await Seller.findOne({ email }).select("+password");
-    if (!seller) throw new BadRequestError("Seller don't exists");
-    const match = await bcrypt.compare(password, seller.password);
-    if (!match) throw new BadRequestError("Password is not valid");
-    const token = await createTokenPair({
-      id: seller._id,
-      role: seller.role,
-    });
-    if (!token) throw new BadRequestError("Creat token failed");
-    res.cookie("accessToken", token, {
-      httpOnly: true,
-      expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
-    });
-    new SuccessResponse({
-      message: "Seller login successfully",
-      data: token,
-    }).send(res);
-  };
   seller_register = async (req, res) => {
-    const { name, email, password } = req.body;
-    const sellerExist = await Seller.findOne({ email });
+    const { shopInfo, userId } = req.body;
+    const sellerExist = await Seller.findOne({ userId });
+    console.log(sellerExist);
     if (sellerExist) throw new BadRequestError("Seller already exists");
-    const hashPassword = await bcrypt.hash(password, 10);
-    if (!hashPassword) throw new BadRequestError("Password is not valid");
+    console.log(req.body);
     const createSeller = await Seller.create({
-      name: name.trim(),
-      email: email.trim(),
-      password: hashPassword,
-      method: "menualy",
+      userId,
+      shopInfo,
     });
     if (!createSeller) throw new BadRequestError("Seller don't created");
-    const token = await createTokenPair({
-      id: createSeller._id,
-      role: createSeller.role,
-    });
-    if (!token) throw new BadRequestError("Creat token failed");
-    res.cookie("accessToken", token, {
-      httpOnly: true,
-      expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
-    });
+    await Customer.findOneAndUpdate({ userId }, { role: "seller" });
     new SuccessResponse({
       message: "Seller created successfully",
-      data: token,
+      data: createSeller,
     }).send(res);
   };
   get_user = async (req, res) => {
     const { id, role } = req.user;
-    console.log(req.user);
     console.log(id, role);
     let userGet = {};
     if (role === "admin") {
       userGet = await Admin.findById({ _id: id });
     } else if (role === "seller") {
-      userGet = await Seller.findById({ _id: id });
+      userGet = await Seller.findOne({ userId: id });
+      console.log(userGet);
+    } else {
+      userGet = await Customer.findById({ _id: id });
     }
     new SuccessResponse({
       message: "Get user successfully",

@@ -31,7 +31,7 @@ class HomeController {
     }).send(res);
   };
   get_products = async (req, res) => {
-    const products = await Product.find({}).limit(12).sort({ createAt: -1 });
+    const products = await Product.find({}).limit(30).sort({ createAt: -1 });
     const allProduct1 = await Product.find({}).limit(9).sort({ createAt: -1 });
     const latestProduct = this.formateProduct(allProduct1);
     const allProduct2 = await Product.find({}).limit(9).sort({ rating: -1 });
@@ -74,7 +74,7 @@ class HomeController {
     }).send(res);
   };
   query_products = async (req, res) => {
-    const parPage = 12;
+    const parPage = 30;
     req.query.parPage = parPage;
     const products = await Product.find({}).sort({ createAt: -1 });
     const totalProduct = new QueryProduct(products, req.query)

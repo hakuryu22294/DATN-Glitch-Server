@@ -8,7 +8,6 @@ const { BadRequestError } = require("../core/error.response");
 class CartController {
   async add_to_cart(req, res) {
     const { userId, productId, quantity } = req.body;
-    console.log(`userId:${userId}`);
     const product = await Cart.findOne({
       $and: [
         {
@@ -66,12 +65,11 @@ class CartController {
   get_producst_on_cart = async (req, res) => {
     const co = 5;
     const { userId } = req.params;
+
     const cartProducts = await Cart.aggregate([
       {
         $match: {
-          userId: {
-            $eq: new Types.ObjectId(userId),
-          },
+          userId: new Types.ObjectId(userId),
         },
       },
       {
@@ -83,84 +81,74 @@ class CartController {
         },
       },
     ]);
+
     let buyItems = 0,
       calcPrice = 0,
       productsCount = 0;
-    const outOfStockProduct = cartProducts.filter((p) => {
-      return p.products[0].stock < p.quantity;
-    });
-    for (let i = 0; i < cartProducts.length; i++) {
-      productsCount = productsCount + cartProducts[i].quantity;
-    }
-    const stockProduct = cartProducts.filter(
-      (p) => p.products[0].stock > p.quantity
+
+    const outOfStockProduct = cartProducts.filter(
+      (p) => p.products[0].stock < p.quantity
     );
-    for (let i = 0; i < stockProduct.length; i++) {
-      const { quantity } = stockProduct[i];
-      productsCount = buyItems + quantity;
+    productsCount = cartProducts.reduce(
+      (total, item) => total + item.quantity,
+      0
+    );
+
+    const stockProduct = cartProducts.filter(
+      (p) => p.products[0].stock >= p.quantity
+    );
+    calcPrice = stockProduct.reduce((total, item) => {
+      const { quantity } = item;
       buyItems += quantity;
-      const { price, discount } = stockProduct[i].products[0];
-      calcPrice += quantity * (price - Math.floor(price * discount) / 100);
-      if (discount !== 0) {
-        calcPrice += quantity * (price - Math.floor(price * discount) / 100);
+      const { price, discount } = item.products[0];
+      const discountedPrice = price - Math.floor(price * discount) / 100;
+      return total + quantity * (discount !== 0 ? discountedPrice : price);
+    }, 0);
+
+    const sellers = stockProduct.reduce((acc, item) => {
+      const sellerId = item.products[0].sellerId.toString();
+      const existingSeller = acc.find((s) => s.sellerId === sellerId);
+
+      const { price, discount, shopName } = item.products[0];
+      const pri =
+        discount !== 0 ? price - Math.floor(price * discount) / 100 : price;
+      const finalPrice = pri - Math.floor((pri * co) / 100);
+
+      if (existingSeller) {
+        existingSeller.products.push({
+          _id: item._id,
+          quantity: item.quantity,
+          productInfo: item.products[0],
+        });
+        existingSeller.price += finalPrice * item.quantity;
       } else {
-        calcPrice += quantity * price;
+        acc.push({
+          sellerId,
+          shopName,
+          price: finalPrice * item.quantity,
+          products: [
+            {
+              _id: item._id,
+              quantity: item.quantity,
+              productInfo: item.products[0],
+            },
+          ],
+        });
       }
-    }
-    let p = [];
-    let unique = [
-      ...new Set(stockProduct.map((p) => p.products[0].sellerId.toString())),
-    ];
-    for (let i = 0; i < unique.length; i++) {
-      let price = 0;
-      for (let j = 0; j < stockProduct.length; j++) {
-        const tempProduct = stockProduct[j].products[0];
-        if (unique[i] === tempProduct.sellerId.toString()) {
-          let pri = 0;
-          if (tempProduct.discount !== 0) {
-            pri =
-              tempProduct.price -
-              Math.floor(tempProduct.price * tempProduct.discount) / 100;
-          } else {
-            pri = tempProduct.price;
-          }
-          pri = pri - Math.floor((pri * co) / 100);
-          price = price + pri + stockProduct[j].quantity;
-          p[i] = {
-            sellerId: unique[i],
-            shopName: tempProduct.shopName,
-            price,
-            products: p[i]
-              ? [
-                  ...p[i].products,
-                  {
-                    _id: stockProduct[j]._id,
-                    quantity: stockProduct[j].quantity,
-                    productInfo: tempProduct,
-                  },
-                ]
-              : [
-                  {
-                    _id: stockProduct[j]._id,
-                    quantity: stockProduct[j].quantity,
-                    productInfo: tempProduct,
-                  },
-                ],
-          };
-        }
-      }
-      new SuccessResponse({
-        message: "Get cart successfully",
-        data: {
-          cartProducts: p,
-          price: calcPrice,
-          productsCount,
-          shippingFee: 20000 * p.length,
-          outOfStockProduct,
-          buyItems,
-        },
-      }).send(res);
-    }
+      return acc;
+    }, []);
+
+    new SuccessResponse({
+      message: "Get cart successfully",
+      data: {
+        cartProducts: sellers,
+        price: calcPrice,
+        productsCount,
+        shippingFee: 20000 * sellers.length,
+        outOfStockProduct,
+        buyItems,
+      },
+    }).send(res);
   };
 
   delete_cart = async (req, res) => {
@@ -174,8 +162,13 @@ class CartController {
   };
   quantity_inc = async (req, res) => {
     const { cartId } = req.params;
-    const product = await Cart.findById(cartId);
+    const product = await Cart.findById(cartId).populate({
+      path: "productId",
+      select: "stock",
+    });
     const { quantity } = product;
+    if (quantity > product.productId.stock)
+      throw new BadRequestError("Out of stock");
     await Cart.findByIdAndUpdate(cartId, { quantity: quantity + 1 });
     new SuccessResponse({
       message: "Quantity increase successfully",
@@ -206,12 +199,13 @@ class CartController {
     }).send(res);
   };
   add_whishlist = async (req, res) => {
-    const { userId } = req.params;
-    const whishlist = await Wishlist.find({ userId });
-    if (!whishlist) throw new BadRequestError("Whishlist don't found");
+    const { slug } = req.body;
+    const product = await Wishlist.findOne({ slug });
+    if (product) throw new BadRequestError("Product already in whishlist");
+    const whistList = await Wishlist.create(req.body);
     new SuccessResponse({
-      message: "Get whishlist successfully",
-      data: whishlist,
+      message: "Add whishlist successfully",
+      data: whistList,
     }).send(res);
   };
   remove_whishlist = async (req, res) => {

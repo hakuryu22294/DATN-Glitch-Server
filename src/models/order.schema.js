@@ -5,33 +5,42 @@ const COLLECTION_NAME = "Orders";
 
 const orderSchema = new Schema(
   {
-    sellerId: {
+    customerId: {
       type: Schema.Types.ObjectId,
+      ref: "Customer", // Giả định rằng có một model Customer
       required: true,
     },
     products: {
       type: Array,
       required: true,
     },
-    price: {
+    totalPrice: {
       type: Number,
       required: true,
     },
     paymentStatus: {
       type: String,
+      enum: ["unpaid", "paid"],
+      default: "unpaid",
       required: true,
     },
     shippingInfo: {
-      type: String,
+      type: Object,
       required: true,
     },
     deliveryStatus: {
       type: String,
-      required: true,
+      enum: ["pending", "cancelled", "delivered"],
+      default: "pending",
     },
-    date: {
+    orderStatus: {
+      type: String,
+      enum: ["pending", "cancelled", "success"],
+      default: "pending",
+    },
+    orderDate: {
       type: Date,
-      required: true,
+      default: Date.now,
     },
   },
   {

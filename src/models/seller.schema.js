@@ -5,36 +5,15 @@ const COLLECTION_NAME = "Sellers";
 
 const sellerSchema = new Schema(
   {
-    name: {
-      type: String,
+    userId: {
+      type: Schema.Types.ObjectId,
       required: true,
-    },
-    email: {
-      type: String,
-      required: true,
-      validate: {
-        validator: function (v) {
-          return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(v);
-        },
-        message: (props) => `${props.value} is not a valid email!`,
-      },
-    },
-    password: {
-      type: String,
-      required: true,
-    },
-    avatar: {
-      type: String,
-      default:
-        "https://res.cloudinary.com/dw3h0r5jy/image/upload/v1633355639/avatars/avatar-1.png",
-    },
-    role: {
-      type: String,
-      default: "seller",
+      ref: "Customer",
     },
     status: {
       type: String,
-      default: "inactive",
+      default: "active",
+      enum: ["pending", "active", "deactive"],
     },
     shopInfo: {
       type: Object,

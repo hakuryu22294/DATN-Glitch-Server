@@ -6,10 +6,6 @@ const { authentication } = require("../../auth/authUtils");
 const managerAuthRouter = Router();
 
 managerAuthRouter.post(
-  "/seller/login",
-  asyncHandler(AccessController.seller_login)
-);
-managerAuthRouter.post(
   "/admin/login",
   asyncHandler(AccessController.admin_login)
 );
@@ -34,6 +30,5 @@ managerAuthRouter.post(
   authentication,
   asyncHandler(AccessController.profile_info_add)
 );
-managerAuthRouter.get("/logout", asyncHandler(AccessController.logout));
 
 module.exports = managerAuthRouter;
