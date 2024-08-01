@@ -7,57 +7,74 @@ const {
 } = require("../models/repo/product.repo");
 const { BadRequestError } = require("../core/error.response");
 const { Product } = require("../models/product.schema");
-
+const { Seller } = require("../models/seller.schema");
 const { SuccessResponse } = require("../core/success.response");
 const { default: slugify } = require("slugify");
 class ProductController {
   async add_product(req, res) {
     const { id } = req.user;
-    const form = formidable({ multiples: true });
+    console.log(id);
+    const shop = await Seller.findOne({ userId: id });
+
+    const {
+      name,
+      category,
+      description,
+      stock,
+      price,
+      discount,
+      brand,
+      images,
+    } = req.body;
+
+    // Validate and process fields
+    if (!images || images.length === 0)
+      throw new BadRequestError("Images are required");
+
+    const findProduct = await findProductByName({ name });
+
+    if (findProduct) {
+      throw new BadRequestError("Product already exists");
+    }
+
+    const newProduct = await Product.create({
+      sellerId: shop._id,
+      name: name.trim(),
+      category: category.trim(),
+      description: description.trim(),
+      stock: parseInt(stock),
+      discount: parseInt(discount),
+      price: parseInt(price),
+      images: images,
+      brand: brand.trim(),
+      slug: slugify(name, { lower: true }),
+    });
+
+    if (!newProduct) {
+      throw new BadRequestError("Product not created");
+    }
+
+    new SuccessResponse({
+      message: "Product created successfully",
+      data: newProduct,
+    }).send(res);
+  }
+
+  async upload_images_product(req, res) {
+    console.log(req.user);
+    const form = formidable();
     form.parse(req, async (err, fields, files) => {
-      let {
-        name,
-        category,
-        description,
-        stock,
-        price,
-        discount,
-        shopName,
-        brand,
-      } = fields;
-      name = name.trim();
-      const { images } = files;
-      let allImgUrl = [];
+      if (err) return res.status(400).json({ message: "Error parsing files" });
 
-      for (let i = 0; i < images.length; i++) {
-        const result = await cloudinary.uploader.upload(images[i].filepath, {
-          folder: "products",
-          transformations: [{ width: 500, height: 500, crop: "fill" }],
-        });
-        allImgUrl = [...allImgUrl, result.url];
-      }
-
-      const findProduct = await findProductByName({ name });
-
-      if (findProduct) throw new BadRequestError("Product already exists");
-
-      const newProduct = await Product.create({
-        sellerId: id,
-        name,
-        shopName,
-        category: category.trim(),
-        description: description.trim(),
-        stock: parseInt(stock),
-        discount: parseInt(discount),
-        price: parseInt(price),
-        images: allImgUrl,
-        brand: brand.trim(),
-        slug: slugify(name, { lower: true }),
+      const { image } = files;
+      const result = await cloudinary.uploader.upload(image.filepath, {
+        folder: "products",
+        transformations: [{ width: 500, height: 500, crop: "fill" }],
       });
-      if (!newProduct) throw new BadRequestError("Product don't created");
+      if (!result) throw new BadRequestError("Upload image failed");
       new SuccessResponse({
-        message: "Product created successfully",
-        data: newProduct,
+        message: "Upload image successfully",
+        data: result.secure_url,
       }).send(res);
     });
   }
@@ -65,11 +82,12 @@ class ProductController {
   async get_product(req, res) {
     const { page, searchValue, parPage } = req.query;
     const { id } = req.user;
+    const seller = await Seller.findOne({ userId: id });
     const skipPage = parseInt(parPage) * (parseInt(page) - 1);
 
     const { products, total } = await findAllProduct({
       parPage,
-      sellerId: id,
+      sellerId: seller._id,
       searchValue,
       skipPage,
     });
@@ -93,7 +111,8 @@ class ProductController {
     let { name, description, stock, price, discount, brand, productId } =
       req.body;
     name = name.trim();
-    slug = slugify(name, { lower: true });
+    let slug = slugify(name, { lower: true });
+
     const findProduct = await findProductById({ _id: productId });
 
     if (!findProduct) throw new BadRequestError("Product not found");
@@ -107,7 +126,8 @@ class ProductController {
         price,
         discount,
         brand,
-      }
+      },
+      { new: true }
     );
 
     new SuccessResponse({

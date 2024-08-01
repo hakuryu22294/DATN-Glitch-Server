@@ -42,15 +42,14 @@ class OrderController {
 
     // Tạo các đơn hàng riêng biệt cho từng cửa hàng
     const orderPromises = Object.keys(shopOrders).map(async (sellerId) => {
+      console.log(sellerId);
       const order = await Order.create({
         customerId: userId,
         shippingInfo,
         products: shopOrders[sellerId].products,
         totalPrice: shopOrders[sellerId].price + parseInt(shipping_fee),
-        paymentStatus: "unpaid",
-        deliveryStatus: "pending",
-        date: tempDate,
-        sellerId, // Lưu sellerId vào đơn hàng
+        orderDate: tempDate,
+        sellerId,
       });
 
       if (!order)
@@ -179,10 +178,7 @@ class OrderController {
     if (searchValue) {
       orders = await Order.find({
         sellerId: new Types.ObjectId(sellerId),
-        $or: [
-          { "products.name": { $regex: searchValue, $options: "i" } },
-          // Thêm các trường tìm kiếm khác nếu cần
-        ],
+        $or: [{ "products.name": { $regex: searchValue, $options: "i" } }],
       })
         .skip(skipPage)
         .limit(parPage)
@@ -221,17 +217,19 @@ class OrderController {
 
     await Order.findByIdAndUpdate(orderId, {
       paymentStatus: "paid",
-      deliveryStatus: "pending",
+      orderStatus: "processing",
     });
 
     const order = await Order.findById(orderId);
     const time = moment(Date.now()).format("l");
     const splitTime = time.split("/");
-
+    console.log(splitTime);
     await ShopWallet.create({
-      amount: order.price,
+      sellerId: order.sellerId,
+      amount: order.totalPrice,
       month: splitTime[0],
-      year: splitTime[1],
+      year: splitTime[2],
+      day: splitTime[1],
     });
 
     new SuccessResponse({
@@ -242,7 +240,7 @@ class OrderController {
     const { orderId } = req.params;
     const { status } = req.body;
 
-    await Order.findByIdAndUpdate(orderId, { deliveryStatus: status });
+    await Order.findByIdAndUpdate(orderId, { orderStatus: status });
 
     new SuccessResponse({
       message: "Order status updated successfully",
@@ -252,7 +250,7 @@ class OrderController {
     const { orderId } = req.params;
     const { status } = req.body;
 
-    await Order.findByIdAndUpdate(orderId, { deliveryStatus: status });
+    await Order.findByIdAndUpdate(orderId, { orderStatus: status });
 
     new SuccessResponse({
       message: "Order status updated successfully",

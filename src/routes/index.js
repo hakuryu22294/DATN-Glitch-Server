@@ -12,8 +12,8 @@ const dashboardRouter = require("./allRoutes/dashboardRouter");
 const customerRouter = require("./allRoutes/customerRouter");
 const router = Router();
 
-router.use("/customer", customerRouter);
 router.use("/product", productRouter);
+router.use("/customer", customerRouter);
 router.use("/category", categoryRouter);
 router.use("/seller", sellerRouter);
 router.use("/wishlist", whistListRouter);

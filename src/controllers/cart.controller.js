@@ -87,7 +87,7 @@ class CartController {
       productsCount = 0;
 
     const outOfStockProduct = cartProducts.filter(
-      (p) => p.products[0].stock < p.quantity
+      (p) => p.products[0]?.stock < p.quantity
     );
     productsCount = cartProducts.reduce(
       (total, item) => total + item.quantity,

@@ -7,7 +7,12 @@ const orderSchema = new Schema(
   {
     customerId: {
       type: Schema.Types.ObjectId,
-      ref: "Customer", // Giả định rằng có một model Customer
+      ref: "Customer",
+      required: true,
+    },
+    sellerId: {
+      type: Schema.Types.ObjectId,
+      ref: "Seller",
       required: true,
     },
     products: {
@@ -20,7 +25,7 @@ const orderSchema = new Schema(
     },
     paymentStatus: {
       type: String,
-      enum: ["unpaid", "paid"],
+      enum: ["unpaid", "awaiting", "paid"],
       default: "unpaid",
       required: true,
     },
@@ -28,19 +33,21 @@ const orderSchema = new Schema(
       type: Object,
       required: true,
     },
-    deliveryStatus: {
-      type: String,
-      enum: ["pending", "cancelled", "delivered"],
-      default: "pending",
-    },
     orderStatus: {
       type: String,
-      enum: ["pending", "cancelled", "success"],
+      enum: [
+        "pending",
+        "processing",
+        "shipped",
+        "delivered",
+        "cancelled",
+        "returned",
+      ],
       default: "pending",
     },
     orderDate: {
       type: Date,
-      default: Date.now,
+      required: true,
     },
   },
   {

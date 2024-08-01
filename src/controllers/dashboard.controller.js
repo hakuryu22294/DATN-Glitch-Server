@@ -34,12 +34,13 @@ class DashBoardController {
   };
   get_seller_dashboard_data = async (req, res) => {
     const { id } = req.user;
-    console.log(id);
+    const seller = await Seller.findOne({ userId: id });
+
     const totalSale = await ShopWallet.aggregate([
       {
         $match: {
           sellerId: {
-            $eq: id,
+            $eq: seller._id,
           },
         },
       },
@@ -51,20 +52,20 @@ class DashBoardController {
       },
     ]);
     const totalProduct = await Product.find({
-      sellerId: new Types.ObjectId(id),
+      sellerId: seller._id,
     }).countDocuments();
     const totalOrder = await Order.find({
-      sellerId: new Types.ObjectId(id),
+      sellerId: seller._id,
     }).countDocuments();
     const totalPendingOrder = await Order.find({
       $and: [
         {
           sellerId: {
-            $eq: new Types.ObjectId(id),
+            $eq: seller._id,
           },
         },
         {
-          deliveryStatus: {
+          orderStatus: {
             $eq: "pending",
           },
         },
@@ -73,7 +74,19 @@ class DashBoardController {
     const recentsOrders = await Order.find({
       sellerId: new Types.ObjectId(id),
     }).limit(5);
-    console.log(totalProduct);
+    const revenue = await Order.aggregate([
+      {
+        $match: {
+          sellerId: new Types.ObjectId(id),
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$totalPrice" },
+        },
+      },
+    ]);
     new SuccessResponse({
       message: "Get seller dashboard data successfully",
       data: {

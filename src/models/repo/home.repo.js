@@ -38,7 +38,7 @@ class QueryProduct {
         (parseInt(p.price) >= parseInt(this.query.lowPrice)) &
         (parseInt(p.price) <= parseInt(this.query.highPrice))
     );
-    console.log(this.products);
+
     return this;
   };
   sortByPrice = () => {
@@ -53,17 +53,16 @@ class QueryProduct {
         });
       }
     }
+    console.log(this.products);
     return this;
   };
   skip = () => {
     let { pageNumber } = this.query;
-    if (pageNumber === 1) {
-      return this;
-    }
+
     const skipPage = (parseInt(pageNumber) - 1) * this.query.parPage;
     let skipProduct = [];
     console.log(pageNumber, skipPage);
-    console.log(this.products);
+
     for (let i = skipPage; i < this.products.length; i++) {
       skipProduct.push(this.products[i]);
     }
@@ -85,7 +84,6 @@ class QueryProduct {
   };
 
   getProducts = () => {
-    console.log(this.products);
     return this.products;
   };
 

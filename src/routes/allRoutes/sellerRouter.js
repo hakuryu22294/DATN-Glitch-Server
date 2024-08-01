@@ -14,8 +14,7 @@ sellerRouter.get(
 
 sellerRouter.get(
   "/:sellerId",
-  authentication,
-  checkPermisson("admin", "seller"),
+
   asyncHandler(SellerController.get_seller)
 );
 sellerRouter.put(
@@ -26,6 +25,8 @@ sellerRouter.put(
 );
 sellerRouter.get(
   "/get-deactive",
+  authentication,
+  checkPermisson("admin"),
   asyncHandler(SellerController.get_deactive_seller)
 );
 module.exports = sellerRouter;

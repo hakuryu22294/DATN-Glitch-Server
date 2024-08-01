@@ -89,8 +89,9 @@ class HomeController {
       .ratingQuery()
       .searchQuery()
       .priceQuery()
+      .skip()
+      .limit()
       .getProducts();
-
     new SuccessResponse({
       message: "Get products successfully",
       data: {

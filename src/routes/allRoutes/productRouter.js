@@ -12,7 +12,6 @@ productRouter.get(
 
 productRouter.get(
   "/:productId",
-  authentication,
   asyncHandler(ProductController.get_one_product)
 );
 
@@ -23,8 +22,15 @@ productRouter.post(
   asyncHandler(ProductController.add_product)
 );
 
+productRouter.post(
+  "/upload",
+  authentication,
+  checkPermisson("seller"),
+  asyncHandler(ProductController.upload_images_product)
+);
+
 productRouter.patch(
-  "/update/:productId",
+  "/update",
   authentication,
   checkPermisson("seller"),
   asyncHandler(ProductController.update_product)

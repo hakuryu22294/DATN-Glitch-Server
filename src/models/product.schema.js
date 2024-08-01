@@ -7,6 +7,7 @@ const productSchema = new Schema(
     sellerId: {
       type: Schema.Types.ObjectId,
       required: true,
+      ref: "Seller",
     },
     name: {
       type: String,
@@ -33,10 +34,6 @@ const productSchema = new Schema(
       type: Number,
       required: true,
       min: 0,
-    },
-    shopName: {
-      type: String,
-      required: true,
     },
     description: {
       type: String,

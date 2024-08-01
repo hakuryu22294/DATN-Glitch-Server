@@ -28,21 +28,37 @@ orderRouter.get(
 
 orderRouter.get(
   "/admin/orders",
+  authentication,
   checkPermisson("admin"),
-  OrderController.get_admin_orders
+  asyncHandler(OrderController.get_admin_orders)
 );
-orderRouter.get("/admin/order/:orderId", OrderController.get_admin_order);
+orderRouter.get(
+  "/admin/order/:orderId",
+  asyncHandler(OrderController.get_admin_order)
+);
 orderRouter.put(
   "/admin/order-status/update/:orderId",
   OrderController.admin_order_status_update
 );
 
-orderRouter.use(checkPermisson("seller"));
-orderRouter.get("/seller/orders/:sellerId", OrderController.get_seller_orders);
-orderRouter.get("/seller/order/:orderId", OrderController.get_seller_order);
+orderRouter.get(
+  "/seller/confirm-order/:orderId",
+  asyncHandler(OrderController.order_confirm)
+);
+
+orderRouter.get(
+  "/seller/orders/:sellerId",
+  authentication,
+  checkPermisson("seller"),
+  asyncHandler(OrderController.get_seller_orders)
+);
+orderRouter.get(
+  "/seller/order/:orderId",
+  asyncHandler(OrderController.get_seller_order)
+);
 orderRouter.put(
   "/seller/order-status/update/:orderId",
-  OrderController.admin_order_status_update
+  asyncHandler(OrderController.seller_order_status_update)
 );
 
 module.exports = orderRouter;
