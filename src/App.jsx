@@ -1,24 +1,25 @@
-import { Routes, Route } from 'react-router-dom'
-import UserRouter from './routers/Router';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { get_user_info } from "./redux/store/reducers/authReducer";
+import { getRoutes } from "./router/routes/index";
+import Router from "./router/Router";
+import publicRoutes from "./router/routes/publicRoutes";
 
-const App = () => {
+function App() {
+  const dispatch = useDispatch();
+  const { token } = useSelector((state) => state.auth);
+  const [allRoutes, setAllRoutes] = useState([...publicRoutes]);
+  useEffect(() => {
+    if (token) {
+      dispatch(get_user_info());
+    }
+  }, [dispatch, token]);
+  useEffect(() => {
+    const routes = getRoutes();
+    setAllRoutes([...allRoutes, routes]);
+  }, []);
 
-  return (
-    <>
-    <ToastContainer/>
-      <Routes>
-        {UserRouter.map((page, index) => (
-          <Route
-            key={index}
-            path={page.path}
-            Component={page.component}
-          />
-        ))}
-      </Routes>
-    </>
-  );
-};
+  return <Router allRoutes={allRoutes}></Router>;
+}
 
 export default App;

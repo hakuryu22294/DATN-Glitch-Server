@@ -1,22 +1,27 @@
-import ReactDOM from 'react-dom/client'
-import App from './App.jsx'
-import './index.css'
-import { BrowserRouter as Router } from 'react-router-dom';
-import TabUiContext from './hooks/TabUiContext.jsx';
-import ShowUiProvider from './hooks/ShowUiContext.jsx';
-import UserContext from './hooks/UserContext.jsx';
-import CartProvider from './hooks/CartContext.jsx';
+import { Suspense } from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
+import "./index.css";
+import { BrowserRouter as Router } from "react-router-dom";
+import { Provider } from "react-redux";
+import store from "./redux/store";
+import { Toaster } from "react-hot-toast";
 
-ReactDOM.createRoot(document.getElementById('root')).render(
- <CartProvider>
-     <UserContext>
-        <ShowUiProvider>
-                <TabUiContext>
-                        <Router>
-                            <App />
-                        </Router>
-                </TabUiContext>
-        </ShowUiProvider>
-      </UserContext>
- </CartProvider>
-)
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <Provider store={store}>
+    <Suspense>
+      <Router>
+        <Toaster
+          toastOptions={{
+            position: "top-right",
+            style: {
+              background: "#283046",
+              color: "white",
+            },
+          }}
+        />
+        <App />
+      </Router>
+    </Suspense>
+  </Provider>
+);
