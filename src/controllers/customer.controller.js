@@ -4,7 +4,8 @@ const { Seller } = require("../models/seller.schema");
 const { createTokenPair } = require("../auth/authUtils");
 const { SuccessResponse } = require("../core/success.response");
 const { BadRequestError } = require("../core/error.response");
-
+const JWT = require("jsonwebtoken");
+require("dotenv").config();
 class CustomerController {
   register_ctm = async (req, res) => {
     const { name, email, password } = req.body;
@@ -33,6 +34,34 @@ class CustomerController {
     new SuccessResponse({
       message: "Customer created successfully",
       data: token,
+    }).send(res);
+  };
+  reset_token = async (req, res) => {
+    const token = req.cookies.accessToken;
+    if (!token) throw new BadRequestError("Please Login First !");
+    const decode = await JWT.verify(token, process.env.JWT_SECRET);
+    const user = await Customer.findById(decode.id);
+    const newToken = await createTokenPair({
+      id: user._id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    });
+    res.cookie("accessToken", newToken, {
+      httpOnly: true,
+      expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+    });
+    new SuccessResponse({
+      message: "Reset token successfully",
+      data: newToken,
+    }).send(res);
+  };
+  get_seller_by_userId = async (req, res) => {
+    const { id } = req.user;
+    const seller = await Seller.findOne({ userId: id });
+    new SuccessResponse({
+      message: "Get seller by user id successfully",
+      data: seller,
     }).send(res);
   };
   login_ctm = async (req, res) => {

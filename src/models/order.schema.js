@@ -25,7 +25,7 @@ const orderSchema = new Schema(
     },
     paymentStatus: {
       type: String,
-      enum: ["unpaid", "awaiting", "paid"],
+      enum: ["unpaid", "paid"],
       default: "unpaid",
       required: true,
     },
@@ -35,19 +35,30 @@ const orderSchema = new Schema(
     },
     orderStatus: {
       type: String,
-      enum: [
-        "pending",
-        "processing",
-        "shipped",
-        "delivered",
-        "cancelled",
-        "returned",
-      ],
+      enum: ["pending", "processing", "completed", "cancelled"],
       default: "pending",
+    },
+    deliveryStatus: {
+      type: String,
+      enum: ["not_assigned", "assigned", "in_progress", "delivered"],
+      default: "not_assigned",
     },
     orderDate: {
       type: Date,
       required: true,
+    },
+    shipperId: {
+      type: Schema.Types.ObjectId,
+      ref: "Shipper",
+    },
+    startDeliveryDate: {
+      type: Date,
+    },
+    completeDeliveryDate: {
+      type: Date,
+    },
+    cancelDate: {
+      type: Date,
     },
   },
   {

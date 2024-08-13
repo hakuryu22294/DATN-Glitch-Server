@@ -42,4 +42,9 @@ productRouter.post(
   asyncHandler(ProductController.product_img_update)
 );
 
+productRouter.get(
+  "/shop/:sellerId",
+  asyncHandler(ProductController.get_products_by_shop)
+);
+
 module.exports = productRouter;

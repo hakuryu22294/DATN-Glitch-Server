@@ -10,6 +10,8 @@ const paymentRouter = require("./allRoutes/paymentRouter");
 const orderRouter = require("./allRoutes/orderRouter");
 const dashboardRouter = require("./allRoutes/dashboardRouter");
 const customerRouter = require("./allRoutes/customerRouter");
+const shipperRouter = require("./allRoutes/shipperRouter");
+const verifyRouter = require("./allRoutes/verifyRouter");
 const router = Router();
 
 router.use("/product", productRouter);
@@ -23,5 +25,7 @@ router.use("/manager", managerAuthRouter);
 router.use("/payment", paymentRouter);
 router.use("/order", orderRouter);
 router.use("/dashboard", dashboardRouter);
+router.use("/shipper", shipperRouter);
+router.use("/verify", verifyRouter);
 
 module.exports = router;

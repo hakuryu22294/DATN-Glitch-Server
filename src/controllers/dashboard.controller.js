@@ -98,6 +98,57 @@ class DashBoardController {
       },
     }).send(res);
   };
+  get_daily_orders_stats = async (req, res) => {
+    const { id } = req.user;
+    const seller = await Seller.findOne({ userId: id });
+    const stats = await Order.aggregate([
+      {
+        $match: {
+          sellerId: new Types.ObjectId(seller._id),
+        },
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$orderDate" },
+            month: { $month: "$orderDate" },
+            day: { $dayOfMonth: "$orderDate" },
+          },
+          totalOrders: { $sum: 1 },
+          totalAmount: { $sum: "$totalPrice" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          date: {
+            $concat: [
+              {
+                $toString: "$_id.year",
+              },
+              "-",
+              { $toString: "$_id.month" },
+              "-",
+              { $toString: "$_id.day" },
+            ],
+          },
+          totalOrders: 1,
+          totalAmount: 1,
+        },
+      },
+      {
+        $sort: {
+          date: 1,
+        },
+      },
+    ]);
+    console.log(stats);
+
+    new SuccessResponse({
+      message: "Get daily orders stats successfully",
+      data: stats,
+    }).send(res);
+  };
   get_sold_product_quantities = async (req, res) => {
     const { sellerId } = req.params;
     const soldQuantities = await Order.aggregate([

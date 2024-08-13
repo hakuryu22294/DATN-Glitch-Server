@@ -36,7 +36,6 @@ const findAllProduct = async ({ sellerId, searchValue, parPage, skipPage }) => {
       .limit(parseInt(parPage))
       .sort({ createdAt: -1 });
 
-    console.log(skipPage, parPage);
     total = await Product.find({
       sellerId: sellerId,
     }).countDocuments();

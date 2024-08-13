@@ -60,6 +60,17 @@ class ProductController {
     }).send(res);
   }
 
+  get_products_by_shop = async (req, res) => {
+    const { sellerId } = req.params;
+    console.log(sellerId);
+    const shop = await Seller.findOne({ _id: sellerId });
+    const products = await Product.find({ sellerId });
+    new SuccessResponse({
+      message: "Get products successfully",
+      data: { products, shop },
+    }).send(res);
+  };
+
   async upload_images_product(req, res) {
     console.log(req.user);
     const form = formidable();

@@ -30,10 +30,20 @@ class SellerController {
 
   seller_status_update = async (req, res) => {
     const { sellerId, status } = req.body;
-    const statusUpdatedSeller = await Seller.findByIdAndUpdate({
-      _id: sellerId,
-      status,
-    });
+    console.log(sellerId, status);
+    const statusUpdatedSeller = await Seller.findByIdAndUpdate(
+      {
+        _id: sellerId,
+      },
+      {
+        status: status,
+      },
+      {
+        new: true,
+      }
+    );
+    statusUpdatedSeller.save();
+    console.log(statusUpdatedSeller);
     if (!statusUpdatedSeller) throw new BadRequestError("Seller don't found");
     new SuccessResponse({
       message: "Update seller status successfully",

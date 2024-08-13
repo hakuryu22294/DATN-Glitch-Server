@@ -6,6 +6,7 @@ const { SuccessResponse } = require("../core/success.response");
 const { Types } = require("mongoose");
 const { ShopWallet } = require("../models/shopWallet.schema");
 const { BadRequestError } = require("../core/error.response");
+const { Product } = require("../models/product.schema");
 
 class OrderController {
   place_order = async (req, res) => {
@@ -14,7 +15,6 @@ class OrderController {
     const tempDate = moment(Date.now()).format("LLL");
     const shopOrders = {};
 
-    // Xử lý sản phẩm và phân loại theo cửa hàng
     for (let i = 0; i < products.length; i++) {
       const product = products[i].products;
       const prdPrice = products[i].price;
@@ -36,11 +36,9 @@ class OrderController {
         }
       }
 
-      // Cộng giá của đơn hàng cho cửa hàng hiện tại
       shopOrders[sellerId].price += prdPrice;
     }
 
-    // Tạo các đơn hàng riêng biệt cho từng cửa hàng
     const orderPromises = Object.keys(shopOrders).map(async (sellerId) => {
       console.log(sellerId);
       const order = await Order.create({
@@ -54,18 +52,25 @@ class OrderController {
 
       if (!order)
         throw new BadRequestError("Order not created for seller " + sellerId);
-
+      if (
+        order.paymentStatus === "paid" ||
+        order.orderStatus === "processing"
+      ) {
+        for (let prod of shopOrders[sellerId].products) {
+          await Product.findByIdAndUpdate(prod._id, {
+            $inc: { stock: -prod.quantity },
+          });
+        }
+      }
       return order;
     });
 
     const orders = await Promise.all(orderPromises);
 
-    // Xóa các sản phẩm trong giỏ hàng
     for (let i = 0; i < cartId.length; i++) {
       await Cart.findByIdAndDelete(cartId[i]);
     }
 
-    // Gửi phản hồi thành công
     new SuccessResponse({
       message: "Orders Placed successfully",
       data: orders.map((order) => order._id),
@@ -82,11 +87,11 @@ class OrderController {
     }).countDocuments();
     const pendingOrder = await Order.find({
       customerId: new Types.ObjectId(userId),
-      deliveryStatus: "pending",
+      orderStatus: "pending",
     }).countDocuments();
     const cancelledOrder = await Order.find({
       customerId: new Types.ObjectId(userId),
-      deliveryStatus: "cancelled",
+      orderStatus: "cancelled",
     }).countDocuments();
 
     new SuccessResponse({
@@ -127,37 +132,65 @@ class OrderController {
     }).send(res);
   };
   get_admin_orders = async (req, res) => {
-    let { page, searchValue, parPage } = req.query;
+    let { page, searchValue, parPage, status } = req.query;
     page = parseInt(page) || 1;
     parPage = parseInt(parPage) || 10;
     const skipPage = parPage * (page - 1);
+    let ordersQuery = {};
 
-    let orders;
-    if (searchValue) {
-      orders = await Order.find({
-        $or: [
-          { "products.name": { $regex: searchValue, $options: "i" } },
-          // Thêm các trường tìm kiếm khác nếu cần
-        ],
-      })
-        .skip(skipPage)
-        .limit(parPage)
-        .sort({ orderDate: -1 });
-    } else {
-      orders = await Order.find({})
-        .skip(skipPage)
-        .limit(parPage)
-        .sort({ orderDate: -1 });
+    if (status) {
+      ordersQuery["orderStatus"] = status;
     }
 
-    if (!orders) throw new BadRequestError("Orders not found");
-    const totalOrders = await Order.countDocuments();
+    if (searchValue) {
+      ordersQuery = {
+        $and: [
+          ordersQuery,
+          {
+            $or: [
+              { "products.name": { $regex: searchValue, $options: "i" } },
+              { "shopName": { $regex: searchValue, $options: "i" } },
+              { _id: { $regex: searchValue, $options: "i" } },
+            ],
+          },
+        ],
+      };
+    }
+
+    const orders = await Order.aggregate([
+      { $match: ordersQuery },
+      { $sort: { orderDate: -1 } },
+      {
+        $lookup: {
+          from: "Sellers",
+          localField: "sellerId",
+          foreignField: "_id",
+          as: "shopDetails",
+        },
+      },
+      { $unwind: "$shopDetails" },
+      {
+        $group: {
+          _id: "$shopDetails._id",
+          shopName: { $first: "$shopDetails.shopInfo.shopName" },
+          orders: { $push: "$$ROOT" },
+        },
+      },
+      { $sort: { "orders.orderDate": -1 } },
+      { $skip: skipPage },
+      { $limit: parPage },
+    ]);
+
+    const totalOrders = await Order.countDocuments(ordersQuery);
+
+    if (!orders.length) throw new BadRequestError("Không tìm thấy đơn hàng");
 
     new SuccessResponse({
-      message: "Get orders successfully",
+      message: "Lấy đơn hàng thành công",
       data: { orders, totalOrders },
     }).send(res);
   };
+
   get_admin_order = async (req, res) => {
     const { orderId } = req.params;
     const order = await Order.findById(orderId);
@@ -213,12 +246,18 @@ class OrderController {
   };
 
   order_confirm = async (req, res) => {
-    const { orderId } = req.params;
+    const { orderId, paymentMethod } = req.params;
 
-    await Order.findByIdAndUpdate(orderId, {
-      paymentStatus: "paid",
-      orderStatus: "processing",
-    });
+    if (paymentMethod === "cod") {
+      await Order.findByIdAndUpdate(orderId, {
+        orderStatus: "processing",
+      });
+    } else {
+      await Order.findByIdAndUpdate(orderId, {
+        paymentStatus: "paid",
+        orderStatus: "processing",
+      });
+    }
 
     const order = await Order.findById(orderId);
     const time = moment(Date.now()).format("l");
@@ -240,7 +279,14 @@ class OrderController {
     const { orderId } = req.params;
     const { status } = req.body;
 
-    await Order.findByIdAndUpdate(orderId, { orderStatus: status });
+    const adminOrderStatus = {
+      shipped: "shipped",
+    };
+
+    await Order.findByIdAndUpdate(orderId, {
+      orderStatus: adminOrderStatus[status],
+      startDeliveryDate: Date.now(),
+    });
 
     new SuccessResponse({
       message: "Order status updated successfully",
@@ -249,11 +295,45 @@ class OrderController {
   seller_order_status_update = async (req, res) => {
     const { orderId } = req.params;
     const { status } = req.body;
-
-    await Order.findByIdAndUpdate(orderId, { orderStatus: status });
+    const sellerOrderStatus = {
+      processing: "processing",
+      cancelled: "cancelled",
+    };
+    await Order.findByIdAndUpdate(orderId, {
+      orderStatus: sellerOrderStatus[status],
+    });
 
     new SuccessResponse({
       message: "Order status updated successfully",
+    }).send(res);
+  };
+  shipper_delivery_status_update = async (req, res) => {
+    const { orderId } = req.params;
+    const { status } = req.body;
+    const shipperDeliveryStatus = {
+      in_progress: "in_progress",
+      delivered: "delivered",
+      assigned: "assigned",
+    };
+
+    const orderUpdate = await Order.findByIdAndUpdate(orderId, {
+      deliveryStatus: shipperDeliveryStatus[status],
+    });
+    if (
+      orderUpdate.deliveryStatus === "delivered" &&
+      orderUpdate.paymentStatus === "unpaid"
+    ) {
+      await Order.findByIdAndUpdate(orderId, {
+        completeDeliveryDate: Date.now(),
+        paymentStatus: "paid",
+      });
+      await ShopWallet.create({
+        sellerId: orderUpdate.sellerId,
+        amount: orderUpdate.totalPrice,
+      });
+    }
+    new SuccessResponse({
+      message: "Delivery status updated successfully",
     }).send(res);
   };
 }

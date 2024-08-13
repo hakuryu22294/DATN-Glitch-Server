@@ -31,4 +31,9 @@ managerAuthRouter.post(
   asyncHandler(AccessController.profile_info_add)
 );
 
+managerAuthRouter.get(
+  "/verify/:token",
+  asyncHandler(AccessController.verify_otp)
+);
+
 module.exports = managerAuthRouter;

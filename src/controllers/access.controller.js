@@ -7,6 +7,7 @@ const { cloudinary } = require("../configs/cloudinary.config");
 const { SuccessResponse } = require("../core/success.response");
 const { BadRequestError } = require("../core/error.response");
 const { Customer } = require("../models/customer.schema");
+const { Otp } = require("../models/otp.schema");
 class AccessController {
   admin_login = async (req, res) => {
     const { email, password } = req.body;
@@ -33,15 +34,18 @@ class AccessController {
   seller_register = async (req, res) => {
     const { shopInfo, userId } = req.body;
     const sellerExist = await Seller.findOne({ userId });
-    console.log(sellerExist);
+
     if (sellerExist) throw new BadRequestError("Seller already exists");
-    console.log(req.body);
     const createSeller = await Seller.create({
       userId,
       shopInfo,
     });
     if (!createSeller) throw new BadRequestError("Seller don't created");
-    await Customer.findOneAndUpdate({ userId }, { role: "seller" });
+    await Customer.findByIdAndUpdate(
+      { _id: userId },
+      { role: "seller" },
+      { new: true }
+    );
     new SuccessResponse({
       message: "Seller created successfully",
       data: createSeller,
@@ -118,6 +122,16 @@ class AccessController {
       httpOnly: true,
     });
     new SuccessResponse({ message: "Logout successfully" }).send(res);
+  };
+
+  verify_otp = async (req, res) => {
+    const { token } = req.params;
+    const otp = await Otp.findOne({ otp: token });
+    if (!otp) throw new BadRequestError("Otp don't exists");
+    await Otp.findByIdAndDelete(otp._id);
+    new SuccessResponse({
+      message: "Verify otp successfully",
+    }).send(res);
   };
 }
 

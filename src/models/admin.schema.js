@@ -21,11 +21,7 @@ const adminSchema = new Schema(
       type: String,
       required: true,
     },
-    avatar: {
-      type: String,
-      default:
-        "https://res.cloudinary.com/dw3h0r5jy/image/upload/v1633355639/avatars/avatar-1.png",
-    },
+
     role: {
       type: String,
       default: "admin",

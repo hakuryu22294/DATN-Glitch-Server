@@ -26,4 +26,11 @@ dashboardRouter.get(
   asyncHandler(DashboardController.get_admin_dashboard_data)
 );
 
+dashboardRouter.get(
+  "/get-stats",
+  authentication,
+  checkPermisson("admin", "seller"),
+  asyncHandler(DashboardController.get_daily_orders_stats)
+);
+
 module.exports = dashboardRouter;

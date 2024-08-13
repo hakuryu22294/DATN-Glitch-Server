@@ -12,7 +12,7 @@ const sellerSchema = new Schema(
     },
     status: {
       type: String,
-      default: "active",
+      default: "pending",
       enum: ["pending", "active", "deactive"],
     },
     shopInfo: {
@@ -25,17 +25,6 @@ const sellerSchema = new Schema(
     collection: COLLECTION_NAME,
   }
 );
-
-sellerSchema.index({
-  name: "text",
-  email: "text",
-}),
-  {
-    weights: {
-      name: 5,
-      email: 4,
-    },
-  };
 
 module.exports = {
   Seller: model(DOCUMENT_NAME, sellerSchema),

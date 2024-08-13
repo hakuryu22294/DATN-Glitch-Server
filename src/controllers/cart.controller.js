@@ -95,7 +95,7 @@ class CartController {
     );
 
     const stockProduct = cartProducts.filter(
-      (p) => p.products[0].stock >= p.quantity
+      (p) => p?.products[0]?.stock >= p.quantity
     );
     calcPrice = stockProduct.reduce((total, item) => {
       const { quantity } = item;
@@ -199,8 +199,9 @@ class CartController {
     }).send(res);
   };
   add_whishlist = async (req, res) => {
-    const { slug } = req.body;
-    const product = await Wishlist.findOne({ slug });
+    const { productId } = req.body;
+    const product = await Wishlist.findOne({ productId });
+    console.log(product);
     if (product) throw new BadRequestError("Product already in whishlist");
     const whistList = await Wishlist.create(req.body);
     new SuccessResponse({
