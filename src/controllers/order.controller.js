@@ -248,28 +248,37 @@ class OrderController {
   order_confirm = async (req, res) => {
     const { orderId, paymentMethod } = req.params;
 
+    // Cập nhật trạng thái đơn hàng dựa trên phương thức thanh toán
     if (paymentMethod === "cod") {
+      // Nếu thanh toán COD, chỉ cập nhật trạng thái đơn hàng
       await Order.findByIdAndUpdate(orderId, {
         orderStatus: "processing",
+        paymentStatus: "paid", // Giả định rằng COD đã được thanh toán đầy đủ khi giao hàng
+      });
+
+      // Cập nhật ví của shipper với giá trị đơn hàng (không bao gồm phí giao hàng)
+      const order = await Order.findById(orderId);
+      const { totalPrice } = order;
+      const { sellerId } = order;
+
+      // Trích xuất số tiền không bao gồm phí ship
+      const orderAmount = totalPrice - (order.shipping_fee || 0);
+
+      // Tạo giao dịch cho ví của shipper
+      await ShopWallet.create({
+        sellerId: sellerId,
+        amount: orderAmount,
+        month: moment().format("M"),
+        year: moment().format("YYYY"),
+        day: moment().format("D"),
       });
     } else {
+      // Nếu không phải COD, chỉ cập nhật trạng thái đơn hàng cho thanh toán
       await Order.findByIdAndUpdate(orderId, {
         paymentStatus: "paid",
         orderStatus: "processing",
       });
     }
-
-    const order = await Order.findById(orderId);
-    const time = moment(Date.now()).format("l");
-    const splitTime = time.split("/");
-    console.log(splitTime);
-    await ShopWallet.create({
-      sellerId: order.sellerId,
-      amount: order.totalPrice,
-      month: splitTime[0],
-      year: splitTime[2],
-      day: splitTime[1],
-    });
 
     new SuccessResponse({
       message: "Order confirmed successfully",
@@ -299,6 +308,8 @@ class OrderController {
       processing: "processing",
       cancelled: "cancelled",
     };
+    if (!sellerOrderStatus[status])
+      throw new BadRequestError("Status is not valid");
     await Order.findByIdAndUpdate(orderId, {
       orderStatus: sellerOrderStatus[status],
     });
@@ -307,33 +318,53 @@ class OrderController {
       message: "Order status updated successfully",
     }).send(res);
   };
-  shipper_delivery_status_update = async (req, res) => {
-    const { orderId } = req.params;
-    const { status } = req.body;
-    const shipperDeliveryStatus = {
-      in_progress: "in_progress",
-      delivered: "delivered",
-      assigned: "assigned",
-    };
+  // shipper_delivery_status_update = async (req, res) => {
+  //   const { orderId } = req.params;
+  //   const { status } = req.body;
+  //   const shipperDeliveryStatus = {
+  //     in_progress: "in_progress",
+  //     delivered: "delivered",
+  //     assigned: "assigned",
+  //   };
 
-    const orderUpdate = await Order.findByIdAndUpdate(orderId, {
-      deliveryStatus: shipperDeliveryStatus[status],
-    });
-    if (
-      orderUpdate.deliveryStatus === "delivered" &&
-      orderUpdate.paymentStatus === "unpaid"
-    ) {
-      await Order.findByIdAndUpdate(orderId, {
-        completeDeliveryDate: Date.now(),
-        paymentStatus: "paid",
-      });
-      await ShopWallet.create({
-        sellerId: orderUpdate.sellerId,
-        amount: orderUpdate.totalPrice,
-      });
+  //   const orderUpdate = await Order.findByIdAndUpdate(orderId, {
+  //     deliveryStatus: shipperDeliveryStatus[status],
+  //   });
+  //   if (
+  //     orderUpdate.deliveryStatus === "delivered" &&
+  //     orderUpdate.paymentStatus === "unpaid"
+  //   ) {
+  //     await Order.findByIdAndUpdate(orderId, {
+  //       completeDeliveryDate: Date.now(),
+  //       paymentStatus: "paid",
+  //     });
+  //     await ShopWallet.create({
+  //       sellerId: orderUpdate.sellerId,
+  //       amount: orderUpdate.totalPrice,
+  //     });
+  //   }
+  //   new SuccessResponse({
+  //     message: "Delivery status updated successfully",
+  //   }).send(res);
+  // };
+  hand_over_orders_to_shipper = async (req, res) => {
+    const { orderId = [], shipperId } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(shipperId)) {
+      throw new BadRequestError("Invalid Shipper ID").send(res);
     }
+
+    const updatedOrders = await Order.updateMany(
+      { _id: { $in: orderId } },
+      { deliveryStatus: "assigned", shipperId: shipperId }
+    );
+
+    if (updatedOrders.modifiedCount === 0) {
+      throw new BadRequestError("No orders were updated").send(res);
+    }
+
     new SuccessResponse({
-      message: "Delivery status updated successfully",
+      message: "Orders successfully assigned to shipper",
     }).send(res);
   };
 }

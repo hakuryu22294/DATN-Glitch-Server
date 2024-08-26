@@ -87,6 +87,15 @@ class ShipperController {
     }).send(res);
   };
 
+  get_all_shippers = async (req, res) => {
+    const shippers = await Shipper.find();
+    if (!shippers) throw new BadRequestError("Shippers don't exists");
+    new SuccessResponse({
+      message: "Get all shippers successfully",
+      data: shippers,
+    }).send(res);
+  };
+
   get_all_orders = async (req, res) => {
     const { shipperId } = req.params;
     const orders = await Order.findById({ shipperId })

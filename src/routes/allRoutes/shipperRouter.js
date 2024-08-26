@@ -8,6 +8,12 @@ shipperRouter.get(
   "/dashboard",
   asyncHandler(ShipperController.get_shipper_dashboard)
 );
+shipperRouter.get(
+  "/",
+  authentication,
+  checkPermisson("admin"),
+  asyncHandler(ShipperController.get_all_shippers)
+);
 shipperRouter.post("/login", asyncHandler(ShipperController.login_shipper));
 shipperRouter.get(
   "/info",
