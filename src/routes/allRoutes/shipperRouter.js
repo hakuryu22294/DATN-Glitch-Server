@@ -26,4 +26,10 @@ shipperRouter.post(
   checkPermisson("admin"),
   asyncHandler(ShipperController.create_shipper)
 );
+shipperRouter.get(
+  "/orders/:shipperId",
+  authentication,
+  checkPermisson("shipper"),
+  asyncHandler(ShipperController.get_all_orders)
+);
 module.exports = shipperRouter;

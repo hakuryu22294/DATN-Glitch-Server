@@ -7,6 +7,7 @@ const { cloudinary } = require("../configs/cloudinary.config");
 const { SuccessResponse } = require("../core/success.response");
 const { BadRequestError } = require("../core/error.response");
 const { Customer } = require("../models/customer.schema");
+const { Shipper } = require("../models/shipper.schema");
 const { Otp } = require("../models/otp.schema");
 class AccessController {
   admin_login = async (req, res) => {
@@ -59,7 +60,8 @@ class AccessController {
       userGet = await Admin.findById({ _id: id });
     } else if (role === "seller") {
       userGet = await Seller.findOne({ userId: id });
-      console.log(userGet);
+    } else if (role === "shipper") {
+      userGet = await Shipper.findById({ _id: id });
     } else {
       userGet = await Customer.findById({ _id: id });
     }

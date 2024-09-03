@@ -8,6 +8,7 @@ const { Shipper } = require("../models/shipper.schema");
 const bcryptjs = require("bcryptjs");
 const crypto = require("crypto");
 const { ShipperWallet } = require("../models/shipperWallet");
+const { ShopWallet } = require("../models/shopWallet.schema");
 class ShipperController {
   create_shipper = async (req, res) => {
     const { name, email, phone, password, address } = req.body;
@@ -98,19 +99,19 @@ class ShipperController {
 
   get_all_orders = async (req, res) => {
     const { shipperId } = req.params;
-    const orders = await Order.findById({ shipperId })
+    const orders = await Order.find({ shipperId, deliveryStatus: "assigned" })
       .populate("customerId")
       .populate("sellerId");
     if (!orders) throw new BadRequestError("Orders don't exists");
     new SuccessResponse({
       message: "Get all orders successfully",
       data: orders,
-    });
+    }).send(res);
   };
   update_delivery_status = async (req, res) => {
     const { orderId } = req.params;
     const { status } = req.body;
-    const validStatus = ["pending", "processing", "shipped", "delivered"];
+    const validStatus = ["not_assigned", "assigned", "delivered", "cancelled"];
     if (!validStatus.includes(status))
       throw new BadRequestError("Invalid status");
     const order = await Order.findByIdAndUpdate(
@@ -119,6 +120,16 @@ class ShipperController {
       { new: true }
     );
     if (!order) throw new BadRequestError("Order don't exists");
+    const { totalPrice, sellerId } = order;
+    if (status === "delivered") {
+      await ShopWallet.create({
+        sellerId: sellerId,
+        amount: totalPrice,
+        month: moment().format("M"),
+        year: moment().format("YYYY"),
+        day: moment().format("D"),
+      });
+    }
     new SuccessResponse({
       message: "Update delivery status successfully",
       data: order,

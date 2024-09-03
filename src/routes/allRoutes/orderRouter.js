@@ -61,7 +61,7 @@ orderRouter.put(
   asyncHandler(OrderController.seller_order_status_update)
 );
 orderRouter.post(
-  "/admin/order/hand-over",
+  "/admin/hand-over",
   authentication,
   checkPermisson("admin"),
   asyncHandler(OrderController.hand_over_orders_to_shipper)

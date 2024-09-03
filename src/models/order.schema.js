@@ -40,7 +40,7 @@ const orderSchema = new Schema(
     },
     deliveryStatus: {
       type: String,
-      enum: ["not_assigned", "assigned", "in_progress", "delivered"],
+      enum: ["not_assigned", "assigned", "delivered", "cancelled"],
       default: "not_assigned",
     },
     orderDate: {

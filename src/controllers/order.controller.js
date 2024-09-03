@@ -7,6 +7,8 @@ const { Types } = require("mongoose");
 const { ShopWallet } = require("../models/shopWallet.schema");
 const { BadRequestError } = require("../core/error.response");
 const { Product } = require("../models/product.schema");
+const { Shipper } = require("../models/shipper.schema");
+const mongoose = require("mongoose");
 
 class OrderController {
   place_order = async (req, res) => {
@@ -247,33 +249,23 @@ class OrderController {
 
   order_confirm = async (req, res) => {
     const { orderId, paymentMethod } = req.params;
-
-    // Cập nhật trạng thái đơn hàng dựa trên phương thức thanh toán
     if (paymentMethod === "cod") {
-      // Nếu thanh toán COD, chỉ cập nhật trạng thái đơn hàng
       await Order.findByIdAndUpdate(orderId, {
         orderStatus: "processing",
-        paymentStatus: "paid", // Giả định rằng COD đã được thanh toán đầy đủ khi giao hàng
       });
 
-      // Cập nhật ví của shipper với giá trị đơn hàng (không bao gồm phí giao hàng)
       const order = await Order.findById(orderId);
       const { totalPrice } = order;
       const { sellerId } = order;
 
-      // Trích xuất số tiền không bao gồm phí ship
-      const orderAmount = totalPrice - (order.shipping_fee || 0);
-
-      // Tạo giao dịch cho ví của shipper
       await ShopWallet.create({
         sellerId: sellerId,
-        amount: orderAmount,
+        amount: totalPrice,
         month: moment().format("M"),
         year: moment().format("YYYY"),
         day: moment().format("D"),
       });
     } else {
-      // Nếu không phải COD, chỉ cập nhật trạng thái đơn hàng cho thanh toán
       await Order.findByIdAndUpdate(orderId, {
         paymentStatus: "paid",
         orderStatus: "processing",
@@ -348,23 +340,34 @@ class OrderController {
   //   }).send(res);
   // };
   hand_over_orders_to_shipper = async (req, res) => {
-    const { orderId = [], shipperId } = req.body;
+    const { orderIds = [], shipperId } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(shipperId)) {
-      throw new BadRequestError("Invalid Shipper ID").send(res);
+      return new BadRequestError("Shipper ID không hợp lệ");
+    }
+
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+      return new BadRequestError("Không có order ID nào được cung cấp");
+    }
+
+    const validOrderIds = orderIds.filter((id) =>
+      mongoose.Types.ObjectId.isValid(id)
+    );
+    if (validOrderIds.length === 0) {
+      throw new BadRequestError("Không có Order ID hợp lệ nào được cung cấp");
     }
 
     const updatedOrders = await Order.updateMany(
-      { _id: { $in: orderId } },
+      { _id: { $in: validOrderIds } },
       { deliveryStatus: "assigned", shipperId: shipperId }
     );
 
     if (updatedOrders.modifiedCount === 0) {
-      throw new BadRequestError("No orders were updated").send(res);
+      throw new BadRequestError("Không có đơn hàng nào được cập nhật");
     }
 
     new SuccessResponse({
-      message: "Orders successfully assigned to shipper",
+      message: "Đơn hàng đã được giao thành công cho shipper",
     }).send(res);
   };
 }
