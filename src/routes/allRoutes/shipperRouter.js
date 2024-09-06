@@ -32,4 +32,17 @@ shipperRouter.get(
   checkPermisson("shipper"),
   asyncHandler(ShipperController.get_all_orders)
 );
+
+shipperRouter.get(
+  "/orders/details/:orderId",
+  authentication,
+  checkPermisson("shipper"),
+  asyncHandler(ShipperController.get_info_order)
+);
+shipperRouter.put(
+  "/update-delivery-status/:orderId",
+  authentication,
+  checkPermisson("shipper"),
+  asyncHandler(ShipperController.update_delivery_status)
+);
 module.exports = shipperRouter;

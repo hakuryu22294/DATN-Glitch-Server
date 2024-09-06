@@ -9,6 +9,7 @@ const bcryptjs = require("bcryptjs");
 const crypto = require("crypto");
 const { ShipperWallet } = require("../models/shipperWallet");
 const { ShopWallet } = require("../models/shopWallet.schema");
+const moment = require("moment");
 class ShipperController {
   create_shipper = async (req, res) => {
     const { name, email, phone, password, address } = req.body;
@@ -99,7 +100,11 @@ class ShipperController {
 
   get_all_orders = async (req, res) => {
     const { shipperId } = req.params;
-    const orders = await Order.find({ shipperId, deliveryStatus: "assigned" })
+    const { deliveryStatus } = req.query;
+    const orders = await Order.find({
+      shipperId,
+      deliveryStatus,
+    })
       .populate("customerId")
       .populate("sellerId");
     if (!orders) throw new BadRequestError("Orders don't exists");
@@ -108,15 +113,39 @@ class ShipperController {
       data: orders,
     }).send(res);
   };
+
+  get_info_order = async (req, res) => {
+    const { orderId } = req.params;
+    console.log(orderId);
+    const order = await Order.findById({ _id: orderId })
+      .populate({ path: "customerId", select: "-password" })
+      .populate({ path: "sellerId", select: "-password" });
+    if (!order) throw new BadRequestError("Order don't exists");
+    new SuccessResponse({
+      message: "Get info order successfully",
+      data: order,
+    }).send(res);
+  };
   update_delivery_status = async (req, res) => {
     const { orderId } = req.params;
     const { status } = req.body;
     const validStatus = ["not_assigned", "assigned", "delivered", "cancelled"];
+    const updateStatus = {
+      delivered: {
+        deliveryStatus: "delivered",
+        orderStatus: "completed",
+        paymentStatus: "paid",
+      },
+      cancelled: {
+        deliveryStatus: "cancelled",
+        orderStatus: "cancelled",
+      },
+    };
     if (!validStatus.includes(status))
       throw new BadRequestError("Invalid status");
     const order = await Order.findByIdAndUpdate(
       { _id: orderId },
-      { deliveryStatus: status },
+      { ...updateStatus[status] },
       { new: true }
     );
     if (!order) throw new BadRequestError("Order don't exists");
@@ -174,11 +203,6 @@ class ShipperController {
               $cond: [{ $eq: ["$deliveryStatus", "cancelled"] }, 1, 0],
             },
           },
-          recived: {
-            $sum: {
-              $cond: [{ $eq: ["$deliveryStatus", "shipped"] }, 1, 0],
-            },
-          },
         },
       },
     ]);
@@ -189,7 +213,6 @@ class ShipperController {
         totalIncome: totalIncome.length ? totalIncome[0].totalAmount : 0,
         successOrders: orderCounts.length ? orderCounts[0].success : 0,
         failedOrders: orderCounts.length ? orderCounts[0].failed : 0,
-        recivedOrders: orderCounts.length ? orderCounts[0].recived : 0,
         expectIncome:
           (orderCounts.length ? orderCounts[0].success : 0) * orderPrice,
       },

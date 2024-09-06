@@ -63,7 +63,6 @@ class CartController {
   }
 
   get_producst_on_cart = async (req, res) => {
-    const co = 5;
     const { userId } = req.params;
 
     const cartProducts = await Cart.aggregate([
@@ -112,7 +111,7 @@ class CartController {
       const { price, discount, shopName } = item.products[0];
       const pri =
         discount !== 0 ? price - Math.floor(price * discount) / 100 : price;
-      const finalPrice = pri - Math.floor((pri * co) / 100);
+      const finalPrice = pri;
 
       if (existingSeller) {
         existingSeller.products.push({
