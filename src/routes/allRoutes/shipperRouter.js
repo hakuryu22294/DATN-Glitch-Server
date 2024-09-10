@@ -45,4 +45,10 @@ shipperRouter.put(
   checkPermisson("shipper"),
   asyncHandler(ShipperController.update_delivery_status)
 );
+shipperRouter.get(
+  "/dashboard/:shipperId",
+  authentication,
+  checkPermisson("shipper"),
+  asyncHandler(ShipperController.get_shipper_dashboard)
+);
 module.exports = shipperRouter;

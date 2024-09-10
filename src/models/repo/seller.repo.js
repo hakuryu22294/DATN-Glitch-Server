@@ -4,7 +4,6 @@ const getAllSeller = async ({ searchValue, parPage, page }) => {
   let skipPage = 0;
   if (parPage && page) {
     skipPage = parseInt(parPage) * (parseInt(page) - 1);
-    console.log(parPage);
   }
   let sellers = [],
     total = 0;
@@ -24,7 +23,6 @@ const getAllSeller = async ({ searchValue, parPage, page }) => {
       .sort({ createdAt: -1 });
   }
   total = sellers.length;
-  console.log(sellers, total);
 
   return { sellers, total };
 };

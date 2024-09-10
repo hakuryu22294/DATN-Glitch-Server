@@ -10,6 +10,7 @@ const crypto = require("crypto");
 const { ShipperWallet } = require("../models/shipperWallet");
 const { ShopWallet } = require("../models/shopWallet.schema");
 const moment = require("moment");
+const { Types } = require("mongoose");
 class ShipperController {
   create_shipper = async (req, res) => {
     const { name, email, phone, password, address } = req.body;
@@ -100,14 +101,24 @@ class ShipperController {
 
   get_all_orders = async (req, res) => {
     const { shipperId } = req.params;
-    const { deliveryStatus } = req.query;
+    const { deliveryStatus, date } = req.query;
+
+    const startDate = date ? new Date(date) : new Date();
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 1);
+
     const orders = await Order.find({
       shipperId,
       deliveryStatus,
+      assignedDate: {
+        $gte: startDate,
+        $lt: endDate,
+      },
     })
-      .populate("customerId")
-      .populate("sellerId");
-    if (!orders) throw new BadRequestError("Orders don't exists");
+      .populate({ path: "customerId", select: "-password" })
+      .populate({ path: "sellerId", select: "-password" });
+
+    if (!orders) throw new BadRequestError("Orders don't exist");
     new SuccessResponse({
       message: "Get all orders successfully",
       data: orders,
@@ -116,7 +127,6 @@ class ShipperController {
 
   get_info_order = async (req, res) => {
     const { orderId } = req.params;
-    console.log(orderId);
     const order = await Order.findById({ _id: orderId })
       .populate({ path: "customerId", select: "-password" })
       .populate({ path: "sellerId", select: "-password" });
@@ -175,20 +185,22 @@ class ShipperController {
   };
   get_shipper_dashboard = async (req, res) => {
     const { shipperId } = req.params;
-    const totalIncome = await ShipperWallet.aggregate([
-      {
-        $match: { shipperId: shipperId },
-      },
-      {
-        $group: {
-          _id: null,
-          totalAmount: { $sum: "$amount" },
-        },
-      },
-    ]);
+    const { date } = req.query;
+    const selectedDate = new Date(date);
+    console.log(selectedDate);
+
+    const startOfDay = new Date(selectedDate.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(selectedDate.setHours(23, 59, 59, 999));
+
     const orderCounts = await Order.aggregate([
       {
-        $match: { shipperId: shipperId },
+        $match: {
+          shipperId: new Types.ObjectId(shipperId),
+          assignedDate: {
+            $gte: startOfDay,
+            $lte: endOfDay,
+          },
+        },
       },
       {
         $group: {
@@ -198,22 +210,34 @@ class ShipperController {
               $cond: [{ $eq: ["$deliveryStatus", "delivered"] }, 1, 0],
             },
           },
-          failed: {
+          cancelled: {
             $sum: {
               $cond: [{ $eq: ["$deliveryStatus", "cancelled"] }, 1, 0],
             },
           },
+          assigned: {
+            $sum: {
+              $cond: [{ $eq: ["$deliveryStatus", "assigned"] }, 1, 0],
+            },
+          },
+          total: {
+            $sum: 1,
+          },
         },
       },
     ]);
+
+    console.log(orderCounts);
+
     const orderPrice = 5000;
     new SuccessResponse({
       message: "Get shipper dashboard successfully",
       data: {
-        totalIncome: totalIncome.length ? totalIncome[0].totalAmount : 0,
-        successOrders: orderCounts.length ? orderCounts[0].success : 0,
-        failedOrders: orderCounts.length ? orderCounts[0].failed : 0,
-        expectIncome:
+        success: orderCounts.length ? orderCounts[0].success : 0,
+        cancelled: orderCounts.length ? orderCounts[0].cancelled : 0,
+        assigned: orderCounts.length ? orderCounts[0].assigned : 0,
+        total: orderCounts.length ? orderCounts[0].total : 0,
+        totalIncome:
           (orderCounts.length ? orderCounts[0].success : 0) * orderPrice,
       },
     }).send(res);

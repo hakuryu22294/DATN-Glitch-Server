@@ -51,7 +51,7 @@ const orderSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Shipper",
     },
-    startDeliveryDate: {
+    assignedDate: {
       type: Date,
     },
     completeDeliveryDate: {

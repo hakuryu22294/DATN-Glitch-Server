@@ -310,35 +310,7 @@ class OrderController {
       message: "Order status updated successfully",
     }).send(res);
   };
-  // shipper_delivery_status_update = async (req, res) => {
-  //   const { orderId } = req.params;
-  //   const { status } = req.body;
-  //   const shipperDeliveryStatus = {
-  //     in_progress: "in_progress",
-  //     delivered: "delivered",
-  //     assigned: "assigned",
-  //   };
 
-  //   const orderUpdate = await Order.findByIdAndUpdate(orderId, {
-  //     deliveryStatus: shipperDeliveryStatus[status],
-  //   });
-  //   if (
-  //     orderUpdate.deliveryStatus === "delivered" &&
-  //     orderUpdate.paymentStatus === "unpaid"
-  //   ) {
-  //     await Order.findByIdAndUpdate(orderId, {
-  //       completeDeliveryDate: Date.now(),
-  //       paymentStatus: "paid",
-  //     });
-  //     await ShopWallet.create({
-  //       sellerId: orderUpdate.sellerId,
-  //       amount: orderUpdate.totalPrice,
-  //     });
-  //   }
-  //   new SuccessResponse({
-  //     message: "Delivery status updated successfully",
-  //   }).send(res);
-  // };
   hand_over_orders_to_shipper = async (req, res) => {
     const { orderIds = [], shipperId } = req.body;
 
@@ -359,7 +331,11 @@ class OrderController {
 
     const updatedOrders = await Order.updateMany(
       { _id: { $in: validOrderIds } },
-      { deliveryStatus: "assigned", shipperId: shipperId }
+      {
+        deliveryStatus: "assigned",
+        shipperId: shipperId,
+        assignedDate: Date.now(),
+      }
     );
 
     if (updatedOrders.modifiedCount === 0) {
