@@ -79,6 +79,14 @@ class CartController {
           as: "products",
         },
       },
+      {
+        $lookup: {
+          from: "Sellers",
+          localField: "products.sellerId",
+          foreignField: "_id",
+          as: "sellerInfo",
+        },
+      },
     ]);
 
     let buyItems = 0,
@@ -108,11 +116,13 @@ class CartController {
       const sellerId = item.products[0].sellerId.toString();
       const existingSeller = acc.find((s) => s.sellerId === sellerId);
 
-      const { price, discount, shopName } = item.products[0];
+      const { price, discount } = item.products[0];
       const pri =
         discount !== 0 ? price - Math.floor(price * discount) / 100 : price;
       const finalPrice = pri;
 
+      const shopName = item.sellerInfo[0]?.shopInfo?.shopName || "Unknown"; // Lấy shopName từ sellerInfo
+      console.log("shopName", shopName);
       if (existingSeller) {
         existingSeller.products.push({
           _id: item._id,
@@ -123,7 +133,7 @@ class CartController {
       } else {
         acc.push({
           sellerId,
-          shopName,
+          shopName, // Thêm shopName vào kết quả
           price: finalPrice * item.quantity,
           products: [
             {

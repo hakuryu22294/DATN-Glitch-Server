@@ -19,6 +19,11 @@ const sellerSchema = new Schema(
       type: Object,
       default: {},
     },
+    shopRatting: {
+      type: Number,
+      default: 0,
+      max: 5,
+    },
   },
   {
     timestamps: true,

@@ -42,7 +42,7 @@ orderRouter.put(
 );
 
 orderRouter.get(
-  "/seller/confirm-order/:orderId",
+  "/seller/confirm-order/:orderId/:paymentMethod",
   asyncHandler(OrderController.order_confirm)
 );
 
@@ -65,6 +65,10 @@ orderRouter.post(
   authentication,
   checkPermisson("admin"),
   asyncHandler(OrderController.hand_over_orders_to_shipper)
+);
+orderRouter.post(
+  "/update-stock/:orderId",
+  asyncHandler(OrderController.update_stock_products_in_order)
 );
 
 module.exports = orderRouter;

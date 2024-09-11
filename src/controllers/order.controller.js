@@ -16,7 +16,6 @@ class OrderController {
     let cartId = [];
     const tempDate = moment(Date.now()).format("LLL");
     const shopOrders = {};
-
     for (let i = 0; i < products.length; i++) {
       const product = products[i].products;
       const prdPrice = products[i].price;
@@ -40,9 +39,7 @@ class OrderController {
 
       shopOrders[sellerId].price += prdPrice;
     }
-
     const orderPromises = Object.keys(shopOrders).map(async (sellerId) => {
-      console.log(sellerId);
       const order = await Order.create({
         customerId: userId,
         shippingInfo,
@@ -54,16 +51,7 @@ class OrderController {
 
       if (!order)
         throw new BadRequestError("Order not created for seller " + sellerId);
-      if (
-        order.paymentStatus === "paid" ||
-        order.orderStatus === "processing"
-      ) {
-        for (let prod of shopOrders[sellerId].products) {
-          await Product.findByIdAndUpdate(prod._id, {
-            $inc: { stock: -prod.quantity },
-          });
-        }
-      }
+
       return order;
     });
 
@@ -76,6 +64,25 @@ class OrderController {
     new SuccessResponse({
       message: "Orders Placed successfully",
       data: orders.map((order) => order._id),
+    }).send(res);
+  };
+
+  update_stock_products_in_order = async (req, res) => {
+    const { orderId } = req.params;
+
+    const order = await Order.findById(orderId);
+    for (let i = 0; i < order.products.length; i++) {
+      const product = await Product.findById(order.products[i]._id);
+      const newStock = product.stock - order.products[i].quantity;
+      const newSold = product.sold + order.products[i].quantity;
+      await Product.findByIdAndUpdate(order.products[i]._id, {
+        stock: newStock,
+        sold: newSold,
+      });
+    }
+
+    new SuccessResponse({
+      message: "Update stock products in order successfully",
     }).send(res);
   };
 
@@ -249,11 +256,11 @@ class OrderController {
 
   order_confirm = async (req, res) => {
     const { orderId, paymentMethod } = req.params;
-    if (paymentMethod === "cod") {
+    if (paymentMethod === "vnPay" || paymentMethod === "wallet") {
       await Order.findByIdAndUpdate(orderId, {
+        paymentStatus: "paid",
         orderStatus: "processing",
       });
-
       const order = await Order.findById(orderId);
       const { totalPrice } = order;
       const { sellerId } = order;
@@ -264,11 +271,6 @@ class OrderController {
         month: moment().format("M"),
         year: moment().format("YYYY"),
         day: moment().format("D"),
-      });
-    } else {
-      await Order.findByIdAndUpdate(orderId, {
-        paymentStatus: "paid",
-        orderStatus: "processing",
       });
     }
 
