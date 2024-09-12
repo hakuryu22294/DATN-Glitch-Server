@@ -10,34 +10,31 @@ class CategoryController {
   add_category = async (req, res) => {
     const form = formidable();
 
-    form.parse(req, async (err, fields, files) => {
+    form.parse(req, async (err, fields) => {
       if (err) {
         throw new BadRequestError("Something went wrong");
       } else {
-        console.log(fields, files);
+        console.log(fields);
         let { name } = fields;
-        let { image } = files;
         name = name.trim();
         const slug = slugify(name, { lower: true });
-        const result = await cloudinary.uploader.upload(image.filepath, {
-          folder: "categories",
-        });
-        if (result) {
+
+        try {
           const newCategory = await Category.create({
             name,
-            image: result.url,
             slug,
           });
           new SuccessResponse({
             message: "Category created successfully",
             data: newCategory,
           }).send(res);
-        } else {
-          throw new BadRequestError("Category don't created");
+        } catch (error) {
+          throw new BadRequestError("Category couldn't be created");
         }
       }
     });
   };
+
   get_all_category = async (req, res) => {
     const { page, searchValue, parPage } = req.query;
     let skipPage = 0;

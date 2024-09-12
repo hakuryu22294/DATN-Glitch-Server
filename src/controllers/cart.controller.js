@@ -93,17 +93,22 @@ class CartController {
       calcPrice = 0,
       productsCount = 0;
 
+    // Lọc các sản phẩm hết hàng
     const outOfStockProduct = cartProducts.filter(
       (p) => p.products[0]?.stock < p.quantity
     );
-    productsCount = cartProducts.reduce(
+
+    // Lọc các sản phẩm còn hàng
+    const stockProduct = cartProducts.filter(
+      (p) => p?.products[0]?.stock >= p.quantity
+    );
+
+    // Tính toán lại productsCount chỉ dựa trên sản phẩm còn hàng
+    productsCount = stockProduct.reduce(
       (total, item) => total + item.quantity,
       0
     );
 
-    const stockProduct = cartProducts.filter(
-      (p) => p?.products[0]?.stock >= p.quantity
-    );
     calcPrice = stockProduct.reduce((total, item) => {
       const { quantity } = item;
       buyItems += quantity;
@@ -121,7 +126,7 @@ class CartController {
         discount !== 0 ? price - Math.floor(price * discount) / 100 : price;
       const finalPrice = pri;
 
-      const shopName = item.sellerInfo[0]?.shopInfo?.shopName || "Unknown"; // Lấy shopName từ sellerInfo
+      const shopName = item.sellerInfo[0]?.shopInfo?.shopName || "Unknown";
       console.log("shopName", shopName);
       if (existingSeller) {
         existingSeller.products.push({
@@ -152,7 +157,7 @@ class CartController {
       data: {
         cartProducts: sellers,
         price: calcPrice,
-        productsCount,
+        productsCount, // Đã sửa productsCount để chỉ tính sản phẩm còn hàng
         shippingFee: 20000 * sellers.length,
         outOfStockProduct,
         buyItems,

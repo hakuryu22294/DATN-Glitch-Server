@@ -12,6 +12,7 @@ const dashboardRouter = require("./allRoutes/dashboardRouter");
 const customerRouter = require("./allRoutes/customerRouter");
 const shipperRouter = require("./allRoutes/shipperRouter");
 const verifyRouter = require("./allRoutes/verifyRouter");
+const shippingRouter = require("./allRoutes/shippingRouter");
 const router = Router();
 
 router.use("/product", productRouter);
@@ -27,5 +28,5 @@ router.use("/order", orderRouter);
 router.use("/dashboard", dashboardRouter);
 router.use("/shipper", shipperRouter);
 router.use("/verify", verifyRouter);
-
+router.use("/shipping", shippingRouter);
 module.exports = router;

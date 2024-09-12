@@ -13,9 +13,12 @@ const categorySchema = new Schema(
       type: String,
       required: true,
     },
-    image: {
-      type: String,
-    },
+    subcategories: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Subcategory",
+      },
+    ],
   },
   {
     timestamps: true,
@@ -25,6 +28,11 @@ const categorySchema = new Schema(
 
 categorySchema.pre("save", function (next) {
   this.slug = slugify(this.name, { lower: true });
+  if (this.subcategories) {
+    this.subcategories.forEach((sub) => {
+      sub.slug = slugify(sub.name, { lower: true });
+    });
+  }
   next();
 });
 
