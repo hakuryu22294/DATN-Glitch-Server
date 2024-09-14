@@ -20,7 +20,7 @@ class OrderController {
       const product = products[i].products;
       const prdPrice = products[i].price;
       const sellerId = products[i].sellerId;
-
+      console.log(prdPrice);
       if (!shopOrders[sellerId]) {
         shopOrders[sellerId] = {
           products: [],
@@ -38,6 +38,7 @@ class OrderController {
       }
 
       shopOrders[sellerId].price += prdPrice;
+      console.log(shopOrders[sellerId].price);
     }
     const orderPromises = Object.keys(shopOrders).map(async (sellerId) => {
       const order = await Order.create({
@@ -115,6 +116,8 @@ class OrderController {
   };
   get_orders = async (req, res) => {
     const { userId, status } = req.params;
+    const { page, searchValue, parPage } = req.query;
+    const skipPage = parseInt(parPage) * (parseInt(page) - 1);
     let orders = [];
     if (status !== "all") {
       orders = await Order.find({
@@ -124,7 +127,10 @@ class OrderController {
     } else {
       orders = await Order.find({
         customerId: new Types.ObjectId(userId),
-      });
+      })
+        .skip(skipPage)
+        .limit(parPage)
+        .sort({ createdAt: -1 });
     }
     new SuccessResponse({
       message: "Get orders successfully",
@@ -219,24 +225,18 @@ class OrderController {
     let orders;
     if (searchValue) {
       orders = await Order.find({
-        sellerId: new Types.ObjectId(sellerId),
+        sellerId: sellerId,
         $or: [{ "products.name": { $regex: searchValue, $options: "i" } }],
-      })
-        .skip(skipPage)
-        .limit(parPage)
-        .sort({ orderDate: -1 });
+      });
     } else {
       orders = await Order.find({
-        sellerId: new Types.ObjectId(sellerId),
-      })
-        .skip(skipPage)
-        .limit(parPage)
-        .sort({ orderDate: -1 });
+        sellerId: sellerId,
+      });
     }
 
     if (!orders) throw new BadRequestError("Orders not found");
     const totalOrders = await Order.countDocuments({
-      sellerId: new Types.ObjectId(sellerId),
+      sellerId: sellerId,
     });
 
     new SuccessResponse({
@@ -346,6 +346,100 @@ class OrderController {
 
     new SuccessResponse({
       message: "Đơn hàng đã được giao thành công cho shipper",
+    }).send(res);
+  };
+
+  cancel_order = async (req, res) => {
+    const { orderId } = req.params;
+
+    const order = await Order.findById({ _id: orderId });
+
+    if (!order) throw new BadRequestError("Order not found");
+
+    if (order.orderStatus === "processing") {
+      throw new BadRequestError(
+        "Cannot cancel an order that is in processing status"
+      );
+    }
+
+    await Order.findByIdAndUpdate(
+      { _id: orderId },
+      { orderStatus: "cancelled" }
+    );
+    new SuccessResponse({
+      message: "Order cancelled successfully",
+    }).send(res);
+  };
+  accept_order = async (req, res) => {
+    const { orderId } = req.params;
+
+    const order = await Order.findById({ _id: orderId });
+
+    if (!order) {
+      throw new BadRequestError("Order not found");
+    }
+
+    if (order.orderStatus === "processing") {
+      throw new BadRequestError(
+        "Cannot accept an order that is in processing status"
+      );
+    }
+
+    let products = order.products;
+    const insufficientStockProducts = [];
+
+    for (let i = 0; i < products.length; i++) {
+      const productId = products[i]._id;
+      const quantityOrdered = products[i].quantity;
+
+      const product = await Product.findById(productId);
+
+      if (!product) {
+        throw new BadRequestError(`Product not found with id: ${productId}`);
+      }
+
+      if (product.stock < quantityOrdered) {
+        insufficientStockProducts.push(productId);
+      }
+    }
+
+    if (insufficientStockProducts.length > 0) {
+      if (products.length === 1) {
+        await Order.findByIdAndDelete(orderId);
+        return new SuccessResponse({
+          message: "Order has been deleted due to insufficient stock",
+        }).send(res);
+      } else {
+        products = products.filter(
+          (product) => !insufficientStockProducts.includes(product._id)
+        );
+        await Order.findByIdAndUpdate(
+          { _id: orderId },
+          { products: products },
+          { new: true }
+        );
+      }
+    }
+
+    for (let i = 0; i < products.length; i++) {
+      const productId = products[i]._id;
+      const quantityOrdered = products[i].quantity;
+
+      await Product.findByIdAndUpdate(
+        productId,
+        { $inc: { stock: -quantityOrdered } },
+        { new: true }
+      );
+    }
+
+    const processedOrder = await Order.findByIdAndUpdate(
+      { _id: orderId },
+      { orderStatus: "processing" },
+      { new: true }
+    );
+
+    new SuccessResponse({
+      message: "Order accepted and stock updated successfully",
     }).send(res);
   };
 }

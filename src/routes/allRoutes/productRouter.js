@@ -47,4 +47,11 @@ productRouter.get(
   asyncHandler(ProductController.get_products_by_shop)
 );
 
+productRouter.post(
+  "/update-subcategory",
+  authentication,
+  checkPermisson("seller"),
+  asyncHandler(ProductController.update_sub_category)
+);
+
 module.exports = productRouter;

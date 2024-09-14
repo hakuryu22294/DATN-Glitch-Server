@@ -95,7 +95,7 @@ class ProductController {
     const { id } = req.user;
     const seller = await Seller.findOne({ userId: id });
     const skipPage = parseInt(parPage) * (parseInt(page) - 1);
-
+    console.log(searchValue);
     const { products, total } = await findAllProduct({
       parPage,
       sellerId: seller._id,
@@ -119,25 +119,31 @@ class ProductController {
   }
 
   async update_product(req, res) {
-    let { name, description, stock, price, discount, brand, productId } =
-      req.body;
-    name = name.trim();
-    let slug = slugify(name, { lower: true });
+    let { fieldsToUpdate, productId } = req.body;
 
     const findProduct = await findProductById({ _id: productId });
-
     if (!findProduct) throw new BadRequestError("Product not found");
+    const { name, description, stock, price, discount, brand, status } =
+      fieldsToUpdate;
+    let updatedFields = {};
+
+    if (name && name.trim()) {
+      updatedFields.name = name.trim();
+      updatedFields.slug = slugify(name.trim(), { lower: true });
+    }
+
+    if (description) updatedFields.description = description;
+
+    if (stock) {
+      updatedFields.stock = findProduct.stock + parseInt(stock);
+    }
+    if (price) updatedFields.price = price;
+    if (discount) updatedFields.discount = discount;
+    if (brand) updatedFields.brand = brand;
+    if (status) updatedFields.status = status;
     const updateProduct = await Product.findByIdAndUpdate(
       { _id: productId },
-      {
-        name,
-        slug,
-        description,
-        stock,
-        price,
-        discount,
-        brand,
-      },
+      updatedFields,
       { new: true }
     );
 
@@ -146,6 +152,7 @@ class ProductController {
       data: updateProduct,
     }).send(res);
   }
+
   async product_img_update(req, res) {
     const form = formidable({ multiples: true });
 
@@ -176,6 +183,25 @@ class ProductController {
         throw new BadRequestError("Image not found");
       }
     });
+  }
+  async update_sub_category(req, res) {
+    const { productsIds, subCategory } = req.body;
+    if (!productsIds || productsIds.length === 0) {
+      throw new BadRequestError("Products Ids are not required");
+    }
+    if (!subCategory) {
+      throw new BadRequestError("Sub category is not required");
+    }
+    const products = await Product.updateMany(
+      { _id: { $in: productsIds } },
+      { subCategory }
+    );
+    console.log(products, subCategory);
+    if (!products) throw new BadRequestError("Update sub category failed");
+    new SuccessResponse({
+      message: "Update sub category successfully",
+      data: products,
+    }).send(res);
   }
 }
 

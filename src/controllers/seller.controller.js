@@ -159,6 +159,35 @@ class SellerController {
       }).send(res);
     }
   };
+
+  add_sub_category = async (req, res) => {
+    const { sellerId, subCategory } = req.body;
+    if (!subCategory || !sellerId) {
+      throw new BadRequestError("Missing subCategory or sellerId");
+    }
+
+    const seller = await Seller.findById(sellerId);
+    if (!seller) {
+      throw new BadRequestError("Seller not found");
+    }
+
+    if (seller.subCategories.length >= 5) {
+      throw new BadRequestError("Cannot add more than 5 subcategories");
+    }
+
+    if (seller.subCategories.includes(subCategory)) {
+      throw new BadRequestError("SubCategory already exists");
+    }
+
+    seller.subCategories.push(subCategory);
+
+    const updatedSeller = await seller.save();
+
+    new SuccessResponse({
+      message: "Sub category added successfully",
+      data: updatedSeller,
+    }).send(res);
+  };
 }
 
 module.exports = new SellerController();

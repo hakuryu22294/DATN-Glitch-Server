@@ -58,12 +58,10 @@ class AccessController {
     let userGet = {};
     if (role === "admin") {
       userGet = await Admin.findById({ _id: id });
-    } else if (role === "seller") {
-      userGet = await Seller.findOne({ userId: id });
+    } else if (role === "seller" || role === "user") {
+      userGet = await Customer.findById({ _id: id });
     } else if (role === "shipper") {
       userGet = await Shipper.findById({ _id: id });
-    } else {
-      userGet = await Customer.findById({ _id: id });
     }
     new SuccessResponse({
       message: "Get user successfully",

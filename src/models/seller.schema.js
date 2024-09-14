@@ -15,6 +15,10 @@ const sellerSchema = new Schema(
       default: "pending",
       enum: ["pending", "active", "deactive"],
     },
+    subCategories: {
+      type: [String],
+      default: [],
+    },
     shopInfo: {
       type: Object,
       default: {},

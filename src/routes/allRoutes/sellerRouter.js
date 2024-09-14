@@ -29,4 +29,10 @@ sellerRouter.get(
   checkPermisson("admin"),
   asyncHandler(SellerController.get_deactive_seller)
 );
+sellerRouter.post(
+  "/add-subcategory",
+  authentication,
+  checkPermisson("seller"),
+  asyncHandler(SellerController.add_sub_category)
+);
 module.exports = sellerRouter;
