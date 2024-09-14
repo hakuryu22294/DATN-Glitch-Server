@@ -9,32 +9,37 @@ const findProductById = async (id) => {
   return await Product.findOne({ _id: id }).lean();
 };
 
-const findAllProduct = async ({ sellerId, searchValue, parPage, skipPage }) => {
+const findAllProduct = async ({
+  sellerId,
+  searchValue,
+  parPage,
+  skipPage,
+  status,
+  subCategory,
+}) => {
   let products = [],
     total = 0;
-  if (searchValue) {
-    products = await Product.find({
-      $text: { $search: searchValue },
-      sellerId,
-    })
-      .skip(skipPage)
-      .limit(parseInt(parPage))
-      .sort({ createdAt: -1 });
 
-    total = await Product.countDocuments({
-      $text: { $search: searchValue },
-      sellerId,
-    });
+  const query = { sellerId };
 
-    total = products.length;
-  } else {
-    products = await Product.find({ sellerId: sellerId })
-      .skip(skipPage)
-      .limit(parseInt(parPage))
-      .sort({ createdAt: -1 });
-
-    total = await Product.countDocuments({ sellerId: sellerId });
+  if (status) {
+    query.status = status;
   }
+
+  if (subCategory) {
+    query.subCategory = subCategory;
+  }
+
+  if (searchValue) {
+    query.$text = { $search: searchValue };
+  }
+
+  products = await Product.find(query)
+    .skip(skipPage)
+    .limit(parseInt(parPage))
+    .sort({ createdAt: -1 });
+
+  total = await Product.countDocuments(query);
 
   return { products, total };
 };

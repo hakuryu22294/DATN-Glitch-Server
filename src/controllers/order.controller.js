@@ -9,6 +9,7 @@ const { BadRequestError } = require("../core/error.response");
 const { Product } = require("../models/product.schema");
 const { Shipper } = require("../models/shipper.schema");
 const mongoose = require("mongoose");
+const { PlatformWallet } = require("../models/platformWallet");
 
 class OrderController {
   place_order = async (req, res) => {
@@ -267,7 +268,13 @@ class OrderController {
 
       await ShopWallet.create({
         sellerId: sellerId,
-        amount: totalPrice,
+        amount: totalPrice - totalPrice * 0.1,
+        month: moment().format("M"),
+        year: moment().format("YYYY"),
+        day: moment().format("D"),
+      });
+      await PlatformWallet.create({
+        amount: totalPrice * 0.1,
         month: moment().format("M"),
         year: moment().format("YYYY"),
         day: moment().format("D"),

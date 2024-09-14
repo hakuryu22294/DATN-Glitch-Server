@@ -69,29 +69,26 @@ class AccessController {
     }).send(res);
   };
   profile_image_upload = async (req, res) => {
-    console.log(req.user);
-    const { id } = req.user;
+    const { sellerId } = req.params;
 
     const form = formidable({ multiples: true });
     form.parse(req, async (err, _, files) => {
       const { image } = files;
       const result = await cloudinary.uploader.upload(image.filepath, {
         folder: "profile",
-        format: "jpg",
         width: 300,
         height: 300,
       });
       if (!result) throw new BadRequestError("Upload image failed");
-      const user = await Seller.findByIdAndUpdate(
-        { _id: id },
-        { image: result.url },
+      const sellerUpdate = await Seller.findByIdAndUpdate(
+        { _id: sellerId },
+        { avatar: result.url },
         { new: true }
       );
-      const userInfo = await Seller.findById({ _id: id });
-      if (!userInfo) throw new BadRequestError("User don't found");
+
       new SuccessResponse({
         message: "Upload image successfully",
-        data: userInfo,
+        data: sellerUpdate,
       }).send(res);
     });
   };

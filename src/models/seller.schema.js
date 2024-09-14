@@ -10,6 +10,10 @@ const sellerSchema = new Schema(
       required: true,
       ref: "Customer",
     },
+    avatar: {
+      type: String,
+    },
+
     status: {
       type: String,
       default: "pending",
@@ -22,6 +26,9 @@ const sellerSchema = new Schema(
     shopInfo: {
       type: Object,
       default: {},
+    },
+    activeAt: {
+      type: Date,
     },
     shopRatting: {
       type: Number,

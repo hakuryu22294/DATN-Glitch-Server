@@ -91,7 +91,7 @@ class ProductController {
   }
 
   async get_product(req, res) {
-    const { page, searchValue, parPage } = req.query;
+    const { page, searchValue, parPage, subCategory, status } = req.query;
     const { id } = req.user;
     const seller = await Seller.findOne({ userId: id });
     const skipPage = parseInt(parPage) * (parseInt(page) - 1);
@@ -101,6 +101,8 @@ class ProductController {
       sellerId: seller._id,
       searchValue,
       skipPage,
+      subCategory,
+      status,
     });
     new SuccessResponse({
       message: "Get product successfully",

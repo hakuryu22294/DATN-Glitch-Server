@@ -15,7 +15,7 @@ managerAuthRouter.post(
 );
 
 managerAuthRouter.post(
-  "/profile-image-upload",
+  "/profile-image-upload/:sellerId",
   authentication,
   AccessController.profile_image_upload
 );

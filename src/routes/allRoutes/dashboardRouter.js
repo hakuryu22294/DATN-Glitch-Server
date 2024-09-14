@@ -33,4 +33,11 @@ dashboardRouter.get(
   asyncHandler(DashboardController.get_daily_orders_stats)
 );
 
+dashboardRouter.get(
+  "/get-top/:sellerId",
+  authentication,
+  checkPermisson("admin", "seller"),
+  asyncHandler(DashboardController.get_top_products)
+);
+
 module.exports = dashboardRouter;
