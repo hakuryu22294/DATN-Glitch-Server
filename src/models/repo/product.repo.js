@@ -34,7 +34,11 @@ const findAllProduct = async ({
     query.$text = { $search: searchValue };
   }
 
-  products = await Product.find(query)
+  products = await Product.find({ ...query, status: "published" })
+    .populate({
+      path: "sellerId",
+      select: "shopInfo",
+    })
     .skip(skipPage)
     .limit(parseInt(parPage))
     .sort({ createdAt: -1 });

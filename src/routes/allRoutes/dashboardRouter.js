@@ -40,4 +40,11 @@ dashboardRouter.get(
   asyncHandler(DashboardController.get_top_products)
 );
 
+dashboardRouter.get(
+  "/get-wallet-stats",
+  authentication,
+  checkPermisson("admin"),
+  asyncHandler(DashboardController.get_daily_platform_wallet_stats)
+);
+
 module.exports = dashboardRouter;

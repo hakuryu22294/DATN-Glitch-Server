@@ -93,24 +93,26 @@ class AccessController {
     });
   };
   profile_info_add = async (req, res) => {
-    const { division, district, shopName, subDistrict } = req.body;
-    const { id } = req.user;
-    await Seller.findByIdAndUpdate(
-      { _id: id },
+    const { phoneNumber, address, sellerId } = req.body;
+    console.log(address);
+    const updatedSeller = await Seller.findByIdAndUpdate(
+      { _id: sellerId },
       {
-        shopInfo: {
-          shopName,
-          division,
-          district,
-          subDistrict,
+        $set: {
+          "shopInfo.phoneNumber": phoneNumber,
+          "shopInfo.address": address,
         },
-      }
+      },
+      { new: true }
     );
-    const userInfo = await Seller.findById({ _id: id });
-    if (!userInfo) throw new BadRequestError("User don't found");
+
+    if (!updatedSeller) {
+      throw new BadRequestError("Không tìm thấy người dùng");
+    }
+
     new SuccessResponse({
-      message: "Add profile info successfully",
-      data: userInfo,
+      message: "Cập nhật thông tin profile thành công",
+      data: updatedSeller,
     }).send(res);
   };
   logout = async (req, res) => {

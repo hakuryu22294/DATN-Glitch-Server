@@ -11,6 +11,8 @@ const { ShipperWallet } = require("../models/shipperWallet");
 const { ShopWallet } = require("../models/shopWallet.schema");
 const moment = require("moment");
 const { Types } = require("mongoose");
+const { PlatformWallet } = require("../models/platformWallet");
+
 class ShipperController {
   create_shipper = async (req, res) => {
     const { name, email, phone, password, address } = req.body;
@@ -145,10 +147,12 @@ class ShipperController {
         deliveryStatus: "delivered",
         orderStatus: "completed",
         paymentStatus: "paid",
+        completeDeliveryDate: new Date(Date.now()),
       },
       cancelled: {
         deliveryStatus: "cancelled",
         orderStatus: "cancelled",
+        cancelDate: new Date(Date.now()),
       },
     };
     if (!validStatus.includes(status))
@@ -163,7 +167,21 @@ class ShipperController {
     if (status === "delivered") {
       await ShopWallet.create({
         sellerId: sellerId,
-        amount: totalPrice,
+        amount: totalPrice - totalPrice * 0.1 - 20000,
+        month: moment().format("M"),
+        year: moment().format("YYYY"),
+        day: moment().format("D"),
+      });
+      await ShipperWallet.create({
+        shipperId: order.shipperId,
+        amount: 5000,
+        month: moment().format("M"),
+        year: moment().format("YYYY"),
+        day: moment().format("D"),
+      });
+      await PlatformWallet.create({
+        sellerId: sellerId,
+        amount: totalPrice * 0.1,
         month: moment().format("M"),
         year: moment().format("YYYY"),
         day: moment().format("D"),
@@ -183,15 +201,18 @@ class ShipperController {
       data: shipper,
     }).send(res);
   };
+  // Đảm bảo rằng bạn đã import moment
+
+  // Đảm bảo bạn đã import moment
+
   get_shipper_dashboard = async (req, res) => {
     const { shipperId } = req.params;
     const { date } = req.query;
-    const selectedDate = new Date(date);
-    console.log(selectedDate);
 
-    const startOfDay = new Date(selectedDate.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(selectedDate.setHours(23, 59, 59, 999));
+    const selectedDate = date ? moment(date, "YYYY-MM-DD") : moment();
 
+    const startOfDay = selectedDate.startOf("day").toDate();
+    const endOfDay = selectedDate.endOf("day").toDate();
     const orderCounts = await Order.aggregate([
       {
         $match: {
@@ -215,11 +236,7 @@ class ShipperController {
               $cond: [{ $eq: ["$deliveryStatus", "cancelled"] }, 1, 0],
             },
           },
-          assigned: {
-            $sum: {
-              $cond: [{ $eq: ["$deliveryStatus", "assigned"] }, 1, 0],
-            },
-          },
+
           total: {
             $sum: 1,
           },
@@ -227,9 +244,26 @@ class ShipperController {
       },
     ]);
 
-    console.log(orderCounts);
+    // Query to sum income for the specified shipper and day
+    const totalIncome = await ShipperWallet.aggregate([
+      {
+        $match: {
+          shipperId: new Types.ObjectId(shipperId),
+          createdAt: {
+            $gte: startOfDay,
+            $lte: endOfDay,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          amount: { $sum: "$amount" },
+        },
+      },
+    ]);
 
-    const orderPrice = 5000;
+    // Construct response data
     new SuccessResponse({
       message: "Get shipper dashboard successfully",
       data: {
@@ -237,8 +271,7 @@ class ShipperController {
         cancelled: orderCounts.length ? orderCounts[0].cancelled : 0,
         assigned: orderCounts.length ? orderCounts[0].assigned : 0,
         total: orderCounts.length ? orderCounts[0].total : 0,
-        totalIncome:
-          (orderCounts.length ? orderCounts[0].success : 0) * orderPrice,
+        totalIncome: totalIncome.length ? totalIncome[0].amount : 0,
       },
     }).send(res);
   };

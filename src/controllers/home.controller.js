@@ -31,7 +31,13 @@ class HomeController {
     }).send(res);
   };
   get_products = async (req, res) => {
-    const products = await Product.find({}).limit(30).sort({ createAt: -1 });
+    const products = await Product.find({ status: "published" })
+      .populate({
+        path: "sellerId",
+        select: "shopInfo",
+      })
+      .limit(30)
+      .sort({ createAt: -1 });
     const allProduct1 = await Product.find({}).limit(9).sort({ createAt: -1 });
     const latestProduct = this.formateProduct(allProduct1);
     const allProduct2 = await Product.find({}).limit(9).sort({ rating: -1 });

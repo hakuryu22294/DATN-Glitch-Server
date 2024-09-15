@@ -6,11 +6,25 @@ const { ShopWallet } = require("../models/shopWallet.schema");
 const { Order } = require("../models/order.schema");
 const { Seller } = require("../models/seller.schema");
 const moment = require("moment");
+const { PlatformWallet } = require("../models/platformWallet");
 
 class DashBoardController {
   get_admin_dashboard_data = async (req, res) => {
-    const { id } = req.user;
-    const totalSale = await ShopWallet.aggregate([
+    const { date } = req.query;
+    const selectedDate = date ? moment(date, "YYYY-MM-DD") : moment();
+    const day = selectedDate.date();
+    const month = selectedDate.month() + 1;
+    const year = selectedDate.year();
+    const startOfDay = selectedDate.startOf("day").toDate();
+    const endOfDay = selectedDate.endOf("day").toDate();
+    const totalSale = await PlatformWallet.aggregate([
+      {
+        $match: {
+          day: day,
+          month: month,
+          year: year,
+        },
+      },
       {
         $group: {
           _id: null,
@@ -18,26 +32,61 @@ class DashBoardController {
         },
       },
     ]);
-    const totalProduct = await Product.find({}).countDocuments();
-    const totalOrder = await Order.find({}).countDocuments();
-    const totalSeller = await Seller.find({}).countDocuments();
-    const recentOrders = await Order.find({}).limit(5);
-    console.log(totalSale);
+
+    const dailyProductsSold = await Order.aggregate([
+      {
+        $match: {
+          orderDate: {
+            $gte: startOfDay,
+            $lte: endOfDay,
+          },
+        },
+      },
+      {
+        $unwind: "$products",
+      },
+      {
+        $group: {
+          _id: null,
+          totalProducts: { $sum: "$products.quantity" },
+        },
+      },
+    ]);
+
+    const completedOrders = await Order.countDocuments({
+      orderStatus: "completed",
+      completeDeliveryDate: {
+        $gte: startOfDay,
+        $lte: endOfDay,
+      },
+    });
+
+    const dailyOrders = await Order.countDocuments({
+      orderDate: {
+        $gte: startOfDay,
+        $lte: endOfDay,
+      },
+    });
+    console.log(dailyOrders);
+    console.log(startOfDay, endOfDay);
+
+    const recentOrders = await Order.find({}).sort({ createdAt: -1 }).limit(5);
+
     new SuccessResponse({
       message: "Get admin dashboard data successfully",
       data: {
         totalSale: totalSale.length > 0 ? totalSale[0].totalAmount : 0,
-        totalProduct,
-        totalOrder,
-        totalSeller,
+        dailyProductsSold:
+          dailyProductsSold.length > 0 ? dailyProductsSold[0].totalProducts : 0,
+        dailyOrders,
         recentOrders,
+        completedOrders,
       },
     }).send(res);
   };
   get_seller_dashboard_data = async (req, res) => {
     const { id } = req.user;
     const { date } = req.query;
-    console.log(date);
     const seller = await Seller.findOne({ userId: id });
 
     const selectedDate = date ? moment(date, "YYYY-MM-DD") : moment();
@@ -189,6 +238,45 @@ class DashBoardController {
     console.log(stats);
     new SuccessResponse({
       message: "Get daily orders stats successfully",
+      data: stats,
+    }).send(res);
+  };
+  get_daily_platform_wallet_stats = async (req, res) => {
+    const stats = await PlatformWallet.aggregate([
+      {
+        $group: {
+          _id: {
+            year: "$year",
+            month: "$month",
+            day: "$day",
+          },
+          totalAmount: { $sum: "$amount" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          date: {
+            $concat: [
+              { $toString: "$_id.year" },
+              "-",
+              { $toString: "$_id.month" },
+              "-",
+              { $toString: "$_id.day" },
+            ],
+          },
+          totalAmount: 1,
+        },
+      },
+      {
+        $sort: {
+          date: 1,
+        },
+      },
+    ]);
+
+    new SuccessResponse({
+      message: "Get daily wallet stats successfully",
       data: stats,
     }).send(res);
   };

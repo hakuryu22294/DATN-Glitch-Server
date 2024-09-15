@@ -4,6 +4,11 @@ const COLLECTION_NAME = "PlatformWallets";
 
 const platformWalletSchema = new Schema(
   {
+    sellerId: {
+      type: Schema.Types.ObjectId,
+      ref: "Seller",
+      required: true,
+    },
     amount: {
       type: Number,
       required: true,

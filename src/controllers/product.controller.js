@@ -102,7 +102,7 @@ class ProductController {
       searchValue,
       skipPage,
       subCategory,
-      status,
+      status: "published",
     });
     new SuccessResponse({
       message: "Get product successfully",

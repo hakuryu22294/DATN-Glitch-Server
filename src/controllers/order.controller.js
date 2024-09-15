@@ -119,12 +119,16 @@ class OrderController {
     const { userId, status } = req.params;
     const { page, searchValue, parPage } = req.query;
     const skipPage = parseInt(parPage) * (parseInt(page) - 1);
+
     let orders = [];
     if (status !== "all") {
       orders = await Order.find({
         customerId: new Types.ObjectId(userId),
-        deliveryStatus: status,
-      });
+        orderStatus: status,
+      })
+        .skip(skipPage)
+        .limit(parPage)
+        .sort({ createdAt: -1 });
     } else {
       orders = await Order.find({
         customerId: new Types.ObjectId(userId),
@@ -268,13 +272,13 @@ class OrderController {
 
       await ShopWallet.create({
         sellerId: sellerId,
-        amount: totalPrice - totalPrice * 0.1,
+        amount: totalPrice - totalPrice * 0.1 - 20000,
         month: moment().format("M"),
         year: moment().format("YYYY"),
         day: moment().format("D"),
       });
       await PlatformWallet.create({
-        amount: totalPrice * 0.1,
+        amount: totalPrice * 0.1 + 15000,
         month: moment().format("M"),
         year: moment().format("YYYY"),
         day: moment().format("D"),

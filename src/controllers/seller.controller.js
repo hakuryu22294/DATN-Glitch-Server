@@ -61,7 +61,6 @@ class SellerController {
 
   seller_status_update = async (req, res) => {
     const { sellerId, status } = req.body;
-    console.log(sellerId, status);
     const statusUpdatedSeller = await Seller.findByIdAndUpdate(
       {
         _id: sellerId,
