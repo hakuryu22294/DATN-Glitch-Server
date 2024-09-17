@@ -6,7 +6,7 @@ const findProductByName = async ({ name }) => {
 };
 
 const findProductById = async (id) => {
-  return await Product.findOne({ _id: id }).lean();
+  return await Product.findOne({ _id: id });
 };
 
 const findAllProduct = async ({
@@ -34,7 +34,7 @@ const findAllProduct = async ({
     query.$text = { $search: searchValue };
   }
 
-  products = await Product.find({ ...query, status: "published" })
+  products = await Product.find(query)
     .populate({
       path: "sellerId",
       select: "shopInfo",

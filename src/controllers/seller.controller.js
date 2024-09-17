@@ -80,7 +80,7 @@ class SellerController {
       data: statusUpdatedSeller,
     }).send(res);
   };
-  get_deactive_seller = async (req, res) => {
+  get_pending_seller = async (req, res) => {
     let { page, parPage, searchValue } = req.query;
     parPage = parseInt(parPage);
     page = parseInt(page);
@@ -90,8 +90,12 @@ class SellerController {
         $text: {
           $search: searchValue,
         },
-        status: "deactive",
+        status: "pending",
       })
+        .populate({
+          path: "userId",
+          select: "name email",
+        })
         .skip(skipPage)
         .limit(parPage)
         .sort({ createdAt: -1 });
@@ -99,20 +103,25 @@ class SellerController {
         $text: {
           $search: searchValue,
         },
-        status: "deactive",
+        status: "pending",
       }).countDocuments();
       new SuccessResponse({
         message: "Get deactive seller successfully",
         data: { sellers, totalSeller },
       }).send(res);
     } else {
-      const seller = await Seller.find({ status: "deactive" })
+      const seller = await Seller.find({ status: "pending" })
+        .populate({
+          path: "userId",
+          select: "name email",
+        })
         .skip(skipPage)
         .limit(parPage)
         .sort({ createdAt: -1 });
       const totalSeller = await Seller.find({
-        status: "deactive",
+        status: "pending",
       }).countDocuments();
+      console.log(seller);
       new SuccessResponse({
         message: "Get deactive seller successfully",
         data: { seller, totalSeller },

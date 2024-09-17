@@ -44,6 +44,8 @@ productRouter.post(
 
 productRouter.get(
   "/shop/:sellerId",
+  authentication,
+  checkPermisson("seller"),
   asyncHandler(ProductController.get_products_by_shop)
 );
 
@@ -52,6 +54,11 @@ productRouter.post(
   authentication,
   checkPermisson("seller"),
   asyncHandler(ProductController.update_sub_category)
+);
+
+productRouter.get(
+  "/home/feartured-products",
+  asyncHandler(ProductController.get_products_featured)
 );
 
 module.exports = productRouter;

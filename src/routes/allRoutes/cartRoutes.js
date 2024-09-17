@@ -29,5 +29,8 @@ cartRouter.delete(
   authentication,
   asyncHandler(CartController.delete_cart)
 );
-
+cartRouter.post(
+  "/check-pre-order",
+  asyncHandler(CartController.check_cart_before_buy)
+);
 module.exports = cartRouter;

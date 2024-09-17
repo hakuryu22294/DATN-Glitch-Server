@@ -47,4 +47,18 @@ dashboardRouter.get(
   asyncHandler(DashboardController.get_daily_platform_wallet_stats)
 );
 
+dashboardRouter.get(
+  "/get-product-count-by-category",
+  authentication,
+  checkPermisson("admin"),
+  asyncHandler(DashboardController.get_products_count_by_category)
+);
+
+dashboardRouter.get(
+  "/get-seller-stast-by-admin",
+  authentication,
+  checkPermisson("admin"),
+  asyncHandler(DashboardController.get_seller_stast_by_admin)
+);
+
 module.exports = dashboardRouter;

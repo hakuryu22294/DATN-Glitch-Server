@@ -60,11 +60,81 @@ class ProductController {
     }).send(res);
   }
 
+  async get_products_featured(req, res) {
+    console.log("test");
+    const categoryProductCounts = await Product.aggregate([
+      {
+        $match: {
+          status: "published",
+        },
+      },
+      {
+        $group: {
+          _id: "$category",
+          totalProducts: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { totalProducts: -1 },
+      },
+      {
+        $limit: 3,
+      },
+    ]);
+    if (!categoryProductCounts) throw new BadRequestError("Category not found");
+    const topCategoriesWithProducts = await Promise.all(
+      categoryProductCounts.map(async (category) => {
+        const products = await Product.find({
+          category: category._id.toString(),
+        })
+          .limit(10)
+          .exec();
+
+        return {
+          category: category._id,
+          totalProducts: category.totalProducts,
+          products,
+        };
+      })
+    );
+
+    new SuccessResponse({
+      message: "Get products successfully",
+      data: topCategoriesWithProducts,
+    }).send(res);
+  }
   get_products_by_shop = async (req, res) => {
     const { sellerId } = req.params;
     console.log(sellerId);
+    const {
+      parPage = 10,
+      page = 1,
+      searchValue = "",
+      subCategory = "",
+      status = "",
+    } = req.query;
+    console.log(req.query);
+    let filter = { sellerId };
+
+    if (searchValue) {
+      filter.name = { $regex: searchValue, $options: "i" }; // Case-insensitive search
+    }
+
+    if (subCategory) {
+      filter.subCategory = subCategory;
+    }
+
+    if (status) {
+      filter.status = status;
+    }
+    console.log(status);
+
     const shop = await Seller.findOne({ _id: sellerId });
-    const products = await Product.find({ sellerId });
+
+    const products = await Product.find(filter)
+      .skip((page - 1) * parPage)
+      .limit(Number(parPage))
+      .sort({ createdAt: -1 });
     new SuccessResponse({
       message: "Get products successfully",
       data: { products, shop },
@@ -94,15 +164,14 @@ class ProductController {
     const { page, searchValue, parPage, subCategory, status } = req.query;
     const { id } = req.user;
     const seller = await Seller.findOne({ userId: id });
+    console.log(seller);
     const skipPage = parseInt(parPage) * (parseInt(page) - 1);
-    console.log(searchValue);
     const { products, total } = await findAllProduct({
       parPage,
       sellerId: seller._id,
       searchValue,
       skipPage,
       subCategory,
-      status: "published",
     });
     new SuccessResponse({
       message: "Get product successfully",

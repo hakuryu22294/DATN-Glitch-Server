@@ -80,24 +80,26 @@ class HomeController {
     }).send(res);
   };
   query_products = async (req, res) => {
-    const parPage = 30;
+    const parPage = parseInt(req.query.parPage) || 12;
     req.query.parPage = parPage;
-    const products = await Product.find({}).sort({ createAt: -1 });
+    const products = await Product.find({ status: "published" }).sort({
+      createAt: -1,
+    });
     const totalProduct = new QueryProduct(products, req.query)
       .categoriesQuery()
       .ratingQuery()
       .searchQuery()
       .priceQuery()
-      .sortByPrice()
       .countProducts();
     const result = new QueryProduct(products, req.query)
       .categoriesQuery()
       .ratingQuery()
       .searchQuery()
       .priceQuery()
+      .sortByPrice()
       .skip()
-      .limit()
-      .getProducts();
+      .limit();
+
     new SuccessResponse({
       message: "Get products successfully",
       data: {

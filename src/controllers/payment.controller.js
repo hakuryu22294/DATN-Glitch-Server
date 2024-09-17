@@ -33,7 +33,6 @@ class PaymentController {
       vnp_OrderType: ProductCode.Other,
       vnp_ReturnUrl: returnUrl,
       vnp_Locale: "vn",
-      vnp_BankCode: "NCB",
     });
     if (!paymentUrl) throw new BadRequestError("Invalid input 2");
 

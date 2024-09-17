@@ -346,6 +346,137 @@ class DashBoardController {
       },
     }).send(res);
   };
+  get_products_count_by_category = async (req, res) => {
+    const stats = await Product.aggregate([
+      {
+        $group: {
+          _id: "$category",
+          totalProducts: { $sum: 1 },
+        },
+      },
+      {
+        $lookup: {
+          from: "Categories",
+          localField: "_id",
+          foreignField: "name",
+          as: "categoryDetails",
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          categoryName: { $arrayElemAt: ["$categoryDetails.name", 0] },
+          totalProducts: 1,
+        },
+      },
+    ]);
+    new SuccessResponse({
+      message: "Get products count by category successfully",
+      data: stats,
+    }).send(res);
+  };
+  get_seller_stast_by_admin = async (req, res) => {
+    // Tính thống kê cho từng seller
+    const sellers = await Seller.aggregate([
+      {
+        $lookup: {
+          from: "Orders",
+          localField: "_id",
+          foreignField: "sellerId",
+          as: "orders",
+        },
+      },
+      {
+        $addFields: {
+          // Tổng doanh thu
+          totalRevenue: {
+            $sum: {
+              $map: {
+                input: "$orders",
+                as: "order",
+                in: {
+                  $cond: [
+                    { $eq: ["$$order.paymentStatus", "paid"] },
+                    "$$order.totalPrice",
+                    0,
+                  ],
+                },
+              },
+            },
+          },
+          // Số lượng đơn hàng hoàn thành
+          completedOrders: {
+            $size: {
+              $filter: {
+                input: "$orders",
+                as: "order",
+                cond: { $eq: ["$$order.orderStatus", "completed"] },
+              },
+            },
+          },
+          // Tổng số đơn hàng
+          totalOrders: { $size: "$orders" },
+        },
+      },
+      {
+        $addFields: {
+          // Tỷ lệ hoàn thành
+          completionRate: {
+            $cond: [
+              { $eq: ["$totalOrders", 0] },
+              0,
+              {
+                $multiply: [
+                  { $divide: ["$completedOrders", "$totalOrders"] },
+                  100,
+                ],
+              },
+            ],
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          shopInfo: 1,
+          avatar: 1,
+          totalRevenue: 1,
+          completedOrders: 1,
+          totalOrders: 1,
+          completionRate: 1,
+          shopRating: 1,
+          status: 1,
+        },
+      },
+    ]);
+
+    console.log("Aggregated sellers:", sellers);
+
+    // Tính tổng số seller
+    const totalSellers = await Seller.countDocuments();
+
+    // Tính doanh thu tổng cộng
+    const totalRevenue = sellers.reduce(
+      (acc, seller) => acc + seller.totalRevenue,
+      0
+    );
+
+    const averageCompletionRate =
+      totalSellers > 0
+        ? sellers.reduce((acc, seller) => acc + seller.completionRate, 0) /
+          totalSellers
+        : 0;
+
+    new SuccessResponse({
+      message: "Get seller statistics successfully",
+      data: {
+        totalSellers,
+        totalRevenue,
+        averageCompletionRate,
+        sellers,
+      },
+    }).send(res);
+  };
 }
 
 module.exports = new DashBoardController();

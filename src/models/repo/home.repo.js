@@ -26,8 +26,9 @@ class QueryProduct {
     this.products = this.query.searchValue
       ? this.products.filter(
           (p) =>
-            p.name.toUpperCase().indexOf(this.query.searchValue.toUpperCase()) >
-            -1
+            p.name
+              .toUpperCase()
+              .includes(this.query.searchValue.toUpperCase()) > -1
         )
       : this.products;
     return this;
@@ -47,13 +48,13 @@ class QueryProduct {
         this.products = this.products.sort(function (a, b) {
           return a.price - b.price;
         });
+        console.log(this.products);
       } else {
         this.products = this.products.sort(function (a, b) {
           return b.price - a.price;
         });
       }
     }
-    console.log(this.products);
     return this;
   };
   skip = () => {

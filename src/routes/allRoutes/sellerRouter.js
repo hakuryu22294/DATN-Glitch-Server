@@ -24,10 +24,10 @@ sellerRouter.put(
   asyncHandler(SellerController.seller_status_update)
 );
 sellerRouter.get(
-  "/get-deactive",
+  "/pending/get-pending-seller",
   authentication,
   checkPermisson("admin"),
-  asyncHandler(SellerController.get_deactive_seller)
+  asyncHandler(SellerController.get_pending_seller)
 );
 sellerRouter.post(
   "/add-subcategory",

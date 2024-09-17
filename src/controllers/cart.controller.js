@@ -4,49 +4,35 @@ const { Cart } = require("../models/cart.schema");
 const { find } = require("lodash");
 const { Wishlist } = require("../models/wishlist.shema");
 const { BadRequestError } = require("../core/error.response");
+const { Product } = require("../models/product.schema");
 
 class CartController {
   async add_to_cart(req, res) {
     const { userId, productId, quantity } = req.body;
-    const product = await Cart.findOne({
-      $and: [
-        {
-          productId: {
-            $eq: productId,
-          },
-        },
-        {
-          userId: {
-            $eq: userId,
-          },
-        },
-      ],
+
+    const product = await Product.findOne({
+      _id: productId,
+      status: "published",
+      stock: { $gt: 0 },
     });
 
-    if (product) {
+    if (!product) {
+      throw new BadRequestError("Sản phẩm không tồn tại hoặc đã hết hàng");
+    }
+
+    const existingCartItem = await Cart.findOne({
+      userId,
+      productId,
+    });
+
+    if (existingCartItem) {
       const updateCart = await Cart.findOneAndUpdate(
-        {
-          $and: [
-            {
-              productId: {
-                $eq: productId,
-              },
-            },
-            {
-              userId: {
-                $eq: userId,
-              },
-            },
-          ],
-        },
-        {
-          $set: {
-            quantity: quantity,
-          },
-        }
+        { userId, productId },
+        { $set: { quantity } },
+        { new: true }
       );
       new SuccessResponse({
-        message: "Update cart successfully",
+        message: "Cập nhật giỏ hàng thành công",
         data: updateCart,
       }).send(res);
     } else {
@@ -56,7 +42,7 @@ class CartController {
         quantity,
       });
       new SuccessResponse({
-        message: "Add cart successfully",
+        message: "Thêm sản phẩm vào giỏ hàng thành công",
         data: newCart,
       }).send(res);
     }
@@ -80,6 +66,15 @@ class CartController {
         },
       },
       {
+        $unwind: "$products",
+      },
+      {
+        $match: {
+          "products.status": "published",
+          "products.stock": { $gt: 0 },
+        },
+      },
+      {
         $lookup: {
           from: "Sellers",
           localField: "products.sellerId",
@@ -93,14 +88,14 @@ class CartController {
       calcPrice = 0,
       productsCount = 0;
 
-    // Lọc các sản phẩm hết hàng
+    // Lọc các sản phẩm hết hàng trong giỏ hàng
     const outOfStockProduct = cartProducts.filter(
-      (p) => p.products[0]?.stock < p.quantity
+      (p) => p.products.stock < p.quantity
     );
 
-    // Lọc các sản phẩm còn hàng
+    // Lọc các sản phẩm còn hàng trong giỏ hàng
     const stockProduct = cartProducts.filter(
-      (p) => p?.products[0]?.stock >= p.quantity
+      (p) => p.products.stock >= p.quantity
     );
 
     // Tính toán lại productsCount chỉ dựa trên sản phẩm còn hàng
@@ -112,16 +107,16 @@ class CartController {
     calcPrice = stockProduct.reduce((total, item) => {
       const { quantity } = item;
       buyItems += quantity;
-      const { price, discount } = item.products[0];
+      const { price, discount } = item.products;
       const discountedPrice = price - Math.floor(price * discount) / 100;
       return total + quantity * (discount !== 0 ? discountedPrice : price);
     }, 0);
 
     const sellers = stockProduct.reduce((acc, item) => {
-      const sellerId = item.products[0].sellerId.toString();
+      const sellerId = item.products.sellerId.toString();
       const existingSeller = acc.find((s) => s.sellerId === sellerId);
 
-      const { price, discount } = item.products[0];
+      const { price, discount } = item.products;
       const pri =
         discount !== 0 ? price - Math.floor(price * discount) / 100 : price;
       const finalPrice = pri;
@@ -132,7 +127,7 @@ class CartController {
         existingSeller.products.push({
           _id: item._id,
           quantity: item.quantity,
-          productInfo: item.products[0],
+          productInfo: item.products,
         });
         existingSeller.price += finalPrice * item.quantity;
       } else {
@@ -144,7 +139,7 @@ class CartController {
             {
               _id: item._id,
               quantity: item.quantity,
-              productInfo: item.products[0],
+              productInfo: item.products,
             },
           ],
         });
@@ -153,7 +148,7 @@ class CartController {
     }, []);
 
     new SuccessResponse({
-      message: "Get cart successfully",
+      message: "Lấy giỏ hàng thành công",
       data: {
         cartProducts: sellers,
         price: calcPrice,
@@ -231,6 +226,62 @@ class CartController {
       message: "Remove whishlist successfully",
       data: whistListRemove,
     }).send(res);
+  };
+  check_cart_before_buy = async (req, res) => {
+    const { cartItems } = req.body;
+
+    const insufficientStockItems = [];
+    const unavailableItems = [];
+
+    for (const cartItem of cartItems) {
+      const { products, shopName } = cartItem;
+
+      for (const item of products) {
+        const { quantity, productInfo } = item;
+        console.log(productInfo);
+        const productId = productInfo._id;
+        console.log("productId", productId);
+
+        // Tìm sản phẩm trong cơ sở dữ liệu
+        const product = await Product.findOne({
+          _id: productId,
+          status: "published",
+        });
+        console.log(product);
+        if (!product) {
+          unavailableItems.push({ productId, shopName });
+          console.log("unavailableItems", unavailableItems);
+          continue;
+        }
+
+        if (product.stock < quantity) {
+          insufficientStockItems.push({
+            productId,
+            shopName,
+            availableStock: product.stock,
+            requestedQuantity: quantity,
+          });
+        }
+      }
+    }
+
+    // Trả về kết quả kiểm tra
+    if (unavailableItems.length > 0) {
+      return res.status(404).json({
+        message: "Các sản phẩm sau đây không còn tồn tại",
+        unavailableItems,
+      });
+    }
+    if (insufficientStockItems.length > 0) {
+      return res.status(400).json({
+        message: "Một số sản phẩm trong giỏ hàng không đủ số lượng",
+        insufficientStockItems,
+      });
+    }
+
+    return res
+      .status(200)
+      .json({ message: "Tất cả sản phẩm trong giỏ hàng đều hợp lệ" });
   };
 }
 

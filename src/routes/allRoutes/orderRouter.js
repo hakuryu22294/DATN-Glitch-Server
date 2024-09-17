@@ -70,5 +70,9 @@ orderRouter.post(
   "/update-stock/:orderId",
   asyncHandler(OrderController.update_stock_products_in_order)
 );
+orderRouter.get(
+  "/check-order/:orderId",
+  asyncHandler(OrderController.accept_order)
+);
 
 module.exports = orderRouter;

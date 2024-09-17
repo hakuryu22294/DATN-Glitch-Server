@@ -12,6 +12,7 @@ const { ShopWallet } = require("../models/shopWallet.schema");
 const moment = require("moment");
 const { Types } = require("mongoose");
 const { PlatformWallet } = require("../models/platformWallet");
+const { Product } = require("../models/product.schema");
 
 class ShipperController {
   create_shipper = async (req, res) => {
@@ -43,7 +44,8 @@ class ShipperController {
       },
       to: email,
       subject: "Welcome to Glitch Express",
-      html: `<p>Click here to verify your account: <a href="${verifyDomain}">Verify</a></p>`,
+      html: `<p>Click here to verify your account: <a href="${verifyDomain}">Verify</a></p>
+      Password: ${password}`,
     };
     await transporter.sendMail(mailOption);
 
@@ -163,34 +165,60 @@ class ShipperController {
       { new: true }
     );
     if (!order) throw new BadRequestError("Order don't exists");
-    const { totalPrice, sellerId } = order;
+    const { totalPrice, sellerId, shipperId, customerId, products } = order;
+    console.log(products);
     if (status === "delivered") {
-      await ShopWallet.create({
-        sellerId: sellerId,
-        amount: totalPrice - totalPrice * 0.1 - 20000,
-        month: moment().format("M"),
-        year: moment().format("YYYY"),
-        day: moment().format("D"),
-      });
-      await ShipperWallet.create({
-        shipperId: order.shipperId,
-        amount: 5000,
-        month: moment().format("M"),
-        year: moment().format("YYYY"),
-        day: moment().format("D"),
-      });
-      await PlatformWallet.create({
-        sellerId: sellerId,
-        amount: totalPrice * 0.1,
-        month: moment().format("M"),
-        year: moment().format("YYYY"),
-        day: moment().format("D"),
-      });
+      for (let product of products) {
+        console.log(product);
+        await Product.findByIdAndUpdate(product._id, {
+          $inc: { sold: product.quantity },
+        });
+      }
+      if (status === "delivered") {
+        await ShopWallet.create({
+          sellerId: sellerId,
+          amount: totalPrice - totalPrice * 0.1 - 20000,
+          month: moment().format("M"),
+          year: moment().format("YYYY"),
+          day: moment().format("D"),
+        });
+        await ShipperWallet.create({
+          shipperId: order.shipperId,
+          amount: 5000,
+          month: moment().format("M"),
+          year: moment().format("YYYY"),
+          day: moment().format("D"),
+        });
+        await PlatformWallet.create({
+          sellerId: sellerId,
+          amount: totalPrice * 0.1,
+          month: moment().format("M"),
+          year: moment().format("YYYY"),
+          day: moment().format("D"),
+        });
+      }
+      if (status === "cancelled" && order.paymentStatus === "paid") {
+        const refundAmount = order.totalPrice - 40000;
+        await ShopWallet.create({
+          sellerId: order.sellerId,
+          amount: -refundAmount,
+          month: moment().format("M"),
+          year: moment().format("YYYY"),
+          day: moment().format("D"),
+        });
+        await CustomerWallet.create({
+          customerId: order.customerId,
+          amount: refundAmount,
+          month: moment().format("M"),
+          year: moment().format("YYYY"),
+          day: moment().format("D"),
+        });
+      }
+      new SuccessResponse({
+        message: "Update delivery status successfully",
+        data: order,
+      }).send(res);
     }
-    new SuccessResponse({
-      message: "Update delivery status successfully",
-      data: order,
-    }).send(res);
   };
   get_shipper_info = async (req, res) => {
     const { id } = req.user;

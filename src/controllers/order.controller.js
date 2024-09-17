@@ -10,6 +10,7 @@ const { Product } = require("../models/product.schema");
 const { Shipper } = require("../models/shipper.schema");
 const mongoose = require("mongoose");
 const { PlatformWallet } = require("../models/platformWallet");
+const { CustomerWallet } = require("../models/customerWallet");
 
 class OrderController {
   place_order = async (req, res) => {
@@ -160,6 +161,7 @@ class OrderController {
 
     if (status) {
       ordersQuery["orderStatus"] = status;
+      ordersQuery["deliveryStatus"] = "not_assigned";
     }
 
     if (searchValue) {
@@ -222,20 +224,27 @@ class OrderController {
   };
   get_seller_orders = async (req, res) => {
     const { sellerId } = req.params;
-    let { page, parPage, searchValue } = req.query;
+    let { page, parPage, searchValue, orderStatus } = req.query;
     page = parseInt(page) || 1;
     parPage = parseInt(parPage) || 10;
     const skipPage = parPage * (page - 1);
-
+    const query = {};
     let orders;
+    if (orderStatus) {
+      query.orderStatus = orderStatus;
+    }
     if (searchValue) {
       orders = await Order.find({
         sellerId: sellerId,
-        $or: [{ "products.name": { $regex: searchValue, $options: "i" } }],
+        $or: [
+          { "products.name": { $regex: searchValue, $options: "i" } }, // Search by product name
+          { "shippingInfo.name": { $regex: searchValue, $options: "i" } }, // Search by customer name
+        ],
       });
     } else {
       orders = await Order.find({
         sellerId: sellerId,
+        orderStatus,
       });
     }
 
@@ -308,17 +317,37 @@ class OrderController {
   };
   seller_order_status_update = async (req, res) => {
     const { orderId } = req.params;
-    const { status } = req.body;
+    const { orderStatus } = req.body;
+
     const sellerOrderStatus = {
       processing: "processing",
       cancelled: "cancelled",
     };
-    if (!sellerOrderStatus[status])
+    if (!sellerOrderStatus[orderStatus])
       throw new BadRequestError("Status is not valid");
+
+    const order = await Order.findById(orderId).exec();
+    if (!order) throw new NotFoundError("Order not found");
+    if (orderStatus === "processing") {
+      await Promise.all(
+        order.products.map(async (product) => {
+          const { quantity } = product;
+          console.log(product);
+          await Product.findByIdAndUpdate(
+            { _id: product._id },
+            { $inc: { stock: -quantity } },
+            { new: true }
+          );
+        })
+      );
+    }
+
+    // Update the order status
     await Order.findByIdAndUpdate(orderId, {
-      orderStatus: sellerOrderStatus[status],
+      orderStatus: sellerOrderStatus[orderStatus],
     });
 
+    // Send a successful response
     new SuccessResponse({
       message: "Order status updated successfully",
     }).send(res);
@@ -387,12 +416,12 @@ class OrderController {
     const order = await Order.findById({ _id: orderId });
 
     if (!order) {
-      throw new BadRequestError("Order not found");
+      throw new BadRequestError("Đơn hàng không tồn tại");
     }
 
     if (order.orderStatus === "processing") {
       throw new BadRequestError(
-        "Cannot accept an order that is in processing status"
+        "Không thể chấp nhận đơn hàng đang ở trạng thái xử lý"
       );
     }
 
@@ -406,7 +435,9 @@ class OrderController {
       const product = await Product.findById(productId);
 
       if (!product) {
-        throw new BadRequestError(`Product not found with id: ${productId}`);
+        throw new BadRequestError(
+          `Sản phẩm không tồn tại với id: ${productId}`
+        );
       }
 
       if (product.stock < quantityOrdered) {
@@ -418,7 +449,7 @@ class OrderController {
       if (products.length === 1) {
         await Order.findByIdAndDelete(orderId);
         return new SuccessResponse({
-          message: "Order has been deleted due to insufficient stock",
+          message: "Đơn hàng đã bị xóa do thiếu hàng",
         }).send(res);
       } else {
         products = products.filter(
@@ -450,7 +481,8 @@ class OrderController {
     );
 
     new SuccessResponse({
-      message: "Order accepted and stock updated successfully",
+      message:
+        "Đơn hàng đã được chấp nhận và tồn kho đã được cập nhật thành công",
     }).send(res);
   };
 }
