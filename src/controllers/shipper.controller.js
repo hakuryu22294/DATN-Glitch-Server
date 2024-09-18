@@ -147,7 +147,6 @@ class ShipperController {
     const updateStatus = {
       delivered: {
         deliveryStatus: "delivered",
-        orderStatus: "completed",
         paymentStatus: "paid",
         completeDeliveryDate: new Date(Date.now()),
       },

@@ -23,5 +23,9 @@ homeRouter.get(
   "/customer/get-reviews/:productId",
   asyncHandler(HomeController.get_reviews)
 );
+homeRouter.get(
+  "/shop-page/get-data/:sellerId",
+  asyncHandler(HomeController.get_shop_data)
+);
 
 module.exports = homeRouter;

@@ -56,23 +56,21 @@ orderRouter.get(
   "/seller/order/:orderId",
   asyncHandler(OrderController.get_seller_order)
 );
-orderRouter.put(
-  "/seller/order-status/update/:orderId",
-  asyncHandler(OrderController.seller_order_status_update)
-);
+
 orderRouter.post(
   "/admin/hand-over",
   authentication,
   checkPermisson("admin"),
   asyncHandler(OrderController.hand_over_orders_to_shipper)
 );
+orderRouter.put(
+  "/handle-cancel/:orderId",
+  asyncHandler(OrderController.cancel_order)
+);
 orderRouter.post(
   "/update-stock/:orderId",
   asyncHandler(OrderController.update_stock_products_in_order)
 );
-orderRouter.get(
-  "/check-order/:orderId",
-  asyncHandler(OrderController.accept_order)
-);
+orderRouter.put("/handle-accept", asyncHandler(OrderController.accept_orders));
 
 module.exports = orderRouter;

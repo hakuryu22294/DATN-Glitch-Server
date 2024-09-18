@@ -61,4 +61,11 @@ dashboardRouter.get(
   asyncHandler(DashboardController.get_seller_stast_by_admin)
 );
 
+dashboardRouter.get(
+  "/get-top-seller-dashboard",
+  authentication,
+  checkPermisson("admin"),
+  asyncHandler(DashboardController.get_top_sellers_dashboard)
+);
+
 module.exports = dashboardRouter;

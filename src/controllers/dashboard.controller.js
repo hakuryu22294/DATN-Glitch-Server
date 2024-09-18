@@ -7,6 +7,7 @@ const { Order } = require("../models/order.schema");
 const { Seller } = require("../models/seller.schema");
 const moment = require("moment");
 const { PlatformWallet } = require("../models/platformWallet");
+const { updateShopRatings } = require("../models/repo/seller.repo");
 
 class DashBoardController {
   get_admin_dashboard_data = async (req, res) => {
@@ -474,6 +475,60 @@ class DashBoardController {
         totalRevenue,
         averageCompletionRate,
         sellers,
+      },
+    }).send(res);
+  };
+  get_top_sellers_dashboard = async (req, res) => {
+    updateShopRatings();
+    const topRatedSellers = await Seller.find({ status: "active" })
+      .sort({ shopRatting: -1 })
+      .limit(5)
+      .select("shopInfo.shopName shopRatting avatar shopInfo.address");
+
+    const topRevenueSellers = await PlatformWallet.aggregate([
+      {
+        $group: {
+          _id: "$sellerId",
+          totalRevenue: { $sum: "$amount" },
+        },
+      },
+      {
+        $sort: { totalRevenue: -1 },
+      },
+      {
+        $limit: 5,
+      },
+      {
+        $lookup: {
+          from: "Sellers",
+          localField: "_id",
+          foreignField: "_id",
+          as: "shopInfo",
+        },
+      },
+      {
+        $unwind: "$shopInfo",
+      },
+      {
+        $project: {
+          _id: 0,
+          sellerId: "$_id",
+          totalRevenue: 1,
+          shopInfo: {
+            shopName: "$shopInfo.shopInfo.shopName",
+            status: "$shopInfo.status",
+            avatar: "$shopInfo.avatar",
+            address: "$shopInfo.shopInfo.address",
+          },
+        },
+      },
+    ]);
+
+    new SuccessResponse({
+      message: "Get top seller statistics successfully",
+      data: {
+        topRatedSellers,
+        topRevenueSellers,
       },
     }).send(res);
   };

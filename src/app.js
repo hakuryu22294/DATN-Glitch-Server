@@ -5,6 +5,7 @@ const compression = require("compression");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const app = express();
+const cronScheduleOrder = require("./utils/cronjob");
 
 //init middlewares
 app.use(morgan("dev"));

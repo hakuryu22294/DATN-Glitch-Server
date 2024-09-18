@@ -86,7 +86,9 @@ class ProductController {
       categoryProductCounts.map(async (category) => {
         const products = await Product.find({
           category: category._id.toString(),
+          status: "published",
         })
+          .populate("sellerId", "shopInfo")
           .limit(10)
           .exec();
 

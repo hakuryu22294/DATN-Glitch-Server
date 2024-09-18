@@ -200,7 +200,10 @@ class CartController {
   };
   get_whishlist = async (req, res) => {
     const { userId } = req.params;
-    const whishlist = await Wishlist.find({ userId });
+    const whishlist = await Wishlist.find({ userId }).populate({
+      path: "productId",
+      select: "stock name price slug",
+    });
     if (!whishlist) throw new BadRequestError("Whishlist don't found");
     new SuccessResponse({
       message: "Get whishlist successfully",

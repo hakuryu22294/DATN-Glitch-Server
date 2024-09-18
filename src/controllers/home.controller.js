@@ -7,6 +7,7 @@ const { Review } = require("../models/review.schema");
 
 const moment = require("moment");
 const { BadRequestError } = require("../core/error.response");
+const { Seller } = require("../models/seller.schema");
 
 class HomeController {
   formateProduct = (products) => {
@@ -38,11 +39,17 @@ class HomeController {
       })
       .limit(30)
       .sort({ createAt: -1 });
-    const allProduct1 = await Product.find({}).limit(9).sort({ createAt: -1 });
+    const allProduct1 = await Product.find({ status: "published" })
+      .limit(9)
+      .sort({ createAt: -1 });
     const latestProduct = this.formateProduct(allProduct1);
-    const allProduct2 = await Product.find({}).limit(9).sort({ rating: -1 });
+    const allProduct2 = await Product.find({ status: "published" })
+      .limit(9)
+      .sort({ rating: -1 });
     const topRateProduct = this.formateProduct(allProduct2);
-    const allProduct3 = await Product.find({}).limit(9).sort({ discount: -1 });
+    const allProduct3 = await Product.find({ status: "published" })
+      .limit(9)
+      .sort({ discount: -1 });
     const topDiscountProduct = this.formateProduct(allProduct3);
     new SuccessResponse({
       message: "Get products successfully",
@@ -59,11 +66,11 @@ class HomeController {
       low: 0,
       high: 0,
     };
-    const products = await Product.find({}).limit(9).sort({
+    const products = await Product.find({ status: "published" }).limit(9).sort({
       createAt: -1,
     });
     const latestProduct = this.formateProduct(products);
-    const getForPrice = await Product.find({}).sort({
+    const getForPrice = await Product.find({ status: "published" }).sort({
       "price": 1,
     });
     if (getForPrice.length > 0) {
@@ -238,13 +245,84 @@ class HomeController {
       .sort({ date: -1 })
       .skip(skipPage)
       .limit(limit);
-    console.log(reviews, getAll.length, ratingReview);
+
     new SuccessResponse({
       message: "Get reviews successfully",
       data: {
         reviews,
         totalReview: getAll.length,
         ratingReview,
+      },
+    }).send(res);
+  };
+
+  get_shop_data = async (req, res) => {
+    const { sellerId } = req.params;
+    const {
+      priceRange,
+      sort = "low-to-high",
+      subCategory = "all",
+      pageNumber = 1,
+      pageSize = 10,
+    } = req.query;
+
+    // Tìm shop
+    const shop = await Seller.findById(sellerId).select(
+      "shopInfo subCategories shopRatting"
+    );
+    if (!shop) {
+      return res.status(404).json({ message: "Shop not found" });
+    }
+
+    // Tính toán shopRating
+    const products = await Product.find({ sellerId });
+    const ratings = products.map((product) => product.rating);
+    const shopRating =
+      ratings.length > 0
+        ? ratings.reduce((acc, rating) => acc + rating, 0) / ratings.length
+        : 0;
+
+    // Cập nhật shopRating
+    await Seller.findByIdAndUpdate(sellerId, { shopRatting: shopRating });
+
+    // Tìm sản phẩm theo subCategory
+    const filter = { sellerId };
+    if (subCategory !== "all") {
+      filter.subCategory = subCategory;
+    }
+
+    // Tạo đối tượng truy vấn mới để tránh lỗi "Query was already executed"
+    const productsQuery = Product.find(filter);
+
+    // Sắp xếp sản phẩm
+    if (sort === "low-to-high") {
+      productsQuery.sort({ price: 1 });
+    } else if (sort === "high-to-low") {
+      productsQuery.sort({ price: -1 });
+    }
+
+    // Phân trang
+    const totalProducts = await Product.countDocuments(filter);
+    const productsList = await productsQuery
+      .skip((pageNumber - 1) * pageSize)
+      .limit(parseInt(pageSize));
+
+    // Nhóm sản phẩm theo subCategory
+    const groupedProducts = productsList.reduce((acc, product) => {
+      const key = product.subCategory || "Uncategorized";
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(product);
+      return acc;
+    }, {});
+
+    new SuccessResponse({
+      message: "Get shop data successfully",
+      data: {
+        shop,
+        products: groupedProducts,
+        totalProducts,
       },
     }).send(res);
   };

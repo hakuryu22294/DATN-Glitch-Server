@@ -9,6 +9,7 @@ const { BadRequestError } = require("../core/error.response");
 const { Customer } = require("../models/customer.schema");
 const { Shipper } = require("../models/shipper.schema");
 const { Otp } = require("../models/otp.schema");
+const sendEmail = require("../utils/sendEmail");
 class AccessController {
   admin_login = async (req, res) => {
     const { email, password } = req.body;
@@ -47,6 +48,13 @@ class AccessController {
       { role: "seller" },
       { new: true }
     );
+    if (createSeller) {
+      await sendEmail(
+        "admin@gmail.com",
+        "Cửa hàng đăng ký mới",
+        `Bạn nhận được một yêu cầu active cửa hàng từ ${createSeller.email}, vui lòng vào trang quản trị để active cửa hàng`
+      );
+    }
     new SuccessResponse({
       message: "Seller created successfully",
       data: createSeller,

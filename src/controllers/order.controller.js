@@ -11,6 +11,12 @@ const { Shipper } = require("../models/shipper.schema");
 const mongoose = require("mongoose");
 const { PlatformWallet } = require("../models/platformWallet");
 const { CustomerWallet } = require("../models/customerWallet");
+const sendEmail = require("../utils/sendEmail");
+const {
+  customerOrderConfirm,
+  sellerOrderConfirm,
+} = require("../utils/emailSubject");
+const { Seller } = require("../models/seller.schema");
 
 class OrderController {
   place_order = async (req, res) => {
@@ -93,7 +99,9 @@ class OrderController {
     const { userId } = req.params;
     const recentOrders = await Order.find({
       customerId: new Types.ObjectId(userId),
-    }).limit(5);
+    })
+      .limit(5)
+      .sort({ createdAt: -1 });
     const totalOrder = await Order.find({
       customerId: new Types.ObjectId(userId),
     }).countDocuments();
@@ -240,12 +248,18 @@ class OrderController {
           { "products.name": { $regex: searchValue, $options: "i" } }, // Search by product name
           { "shippingInfo.name": { $regex: searchValue, $options: "i" } }, // Search by customer name
         ],
-      });
+      })
+        .sort({ createdAt: -1 })
+        .skip(skipPage)
+        .limit(parPage);
     } else {
       orders = await Order.find({
         sellerId: sellerId,
         orderStatus,
-      });
+      })
+        .sort({ createdAt: -1 })
+        .skip(skipPage)
+        .limit(parPage);
     }
 
     if (!orders) throw new BadRequestError("Orders not found");
@@ -270,12 +284,21 @@ class OrderController {
 
   order_confirm = async (req, res) => {
     const { orderId, paymentMethod } = req.params;
+    const order = await Order.findById(orderId)
+      .populate({
+        path: "sellerId",
+        select: "email",
+      })
+      .populate({
+        path: "customerId",
+        select: "email",
+      });
+    console.log(order);
     if (paymentMethod === "vnPay" || paymentMethod === "wallet") {
       await Order.findByIdAndUpdate(orderId, {
         paymentStatus: "paid",
-        orderStatus: "processing",
       });
-      const order = await Order.findById(orderId);
+
       const { totalPrice } = order;
       const { sellerId } = order;
 
@@ -287,12 +310,28 @@ class OrderController {
         day: moment().format("D"),
       });
       await PlatformWallet.create({
+        sellerId: sellerId,
         amount: totalPrice * 0.1 + 15000,
         month: moment().format("M"),
         year: moment().format("YYYY"),
         day: moment().format("D"),
       });
     }
+
+    await sendEmail(
+      order.customerId.email,
+      "Đơn hàng của bạn đã được đặt thành công!",
+      customerOrderConfirm(order._id, order.customerId.name)
+    );
+    const seller = await Seller.findById(order.sellerId).populate({
+      "path": "userId",
+      select: "email",
+    });
+    await sendEmail(
+      seller.userId.email,
+      "Bạn có một đơn hàng mới!",
+      sellerOrderConfirm(order._id, seller.shopInfo.shopName)
+    );
 
     new SuccessResponse({
       message: "Order confirmed successfully",
@@ -311,43 +350,6 @@ class OrderController {
       startDeliveryDate: Date.now(),
     });
 
-    new SuccessResponse({
-      message: "Order status updated successfully",
-    }).send(res);
-  };
-  seller_order_status_update = async (req, res) => {
-    const { orderId } = req.params;
-    const { orderStatus } = req.body;
-
-    const sellerOrderStatus = {
-      processing: "processing",
-      cancelled: "cancelled",
-    };
-    if (!sellerOrderStatus[orderStatus])
-      throw new BadRequestError("Status is not valid");
-
-    const order = await Order.findById(orderId).exec();
-    if (!order) throw new NotFoundError("Order not found");
-    if (orderStatus === "processing") {
-      await Promise.all(
-        order.products.map(async (product) => {
-          const { quantity } = product;
-          console.log(product);
-          await Product.findByIdAndUpdate(
-            { _id: product._id },
-            { $inc: { stock: -quantity } },
-            { new: true }
-          );
-        })
-      );
-    }
-
-    // Update the order status
-    await Order.findByIdAndUpdate(orderId, {
-      orderStatus: sellerOrderStatus[orderStatus],
-    });
-
-    // Send a successful response
     new SuccessResponse({
       message: "Order status updated successfully",
     }).send(res);
@@ -375,6 +377,7 @@ class OrderController {
       { _id: { $in: validOrderIds } },
       {
         deliveryStatus: "assigned",
+        orderStatus: "shipping",
         shipperId: shipperId,
         assignedDate: Date.now(),
       }
@@ -395,94 +398,149 @@ class OrderController {
     const order = await Order.findById({ _id: orderId });
 
     if (!order) throw new BadRequestError("Order not found");
-
+    if (order.orderStatus === "cancelled") {
+      throw new BadRequestError(
+        "Cannot cancel an order that has already been cancelled"
+      );
+    }
     if (order.orderStatus === "processing") {
       throw new BadRequestError(
         "Cannot cancel an order that is in processing status"
       );
     }
+    if (order.paymentStatus === "paid") {
+      const amountToRefund = order.totalPrice - 40000;
+      await CustomerWallet.create({
+        customerId: order.customerId,
+        amount: amountToRefund,
+        day: new Date().getDate(),
+        month: new Date().getMonth() + 1,
+        year: new Date().getFullYear(),
+      });
+      await PlatformWallet.create({
+        sellerId: order.sellerId,
+        amount: -(order.totalPrice * 0.1) + 20000,
+        day: new Date().getDate(),
+        month: new Date().getMonth() + 1,
+        year: new Date().getFullYear(),
+      });
+      await ShopWallet.create({
+        sellerId: order.sellerId,
+        amount: -(order.totalPrice * 0.9) + 20000,
+        day: new Date().getDate(),
+        month: new Date().getMonth() + 1,
+        year: new Date().getFullYear(),
+      });
+    }
 
     await Order.findByIdAndUpdate(
-      { _id: orderId },
-      { orderStatus: "cancelled" }
+      orderId,
+
+      { orderStatus: "cancelled" },
+      { new: true }
     );
     new SuccessResponse({
       message: "Order cancelled successfully",
     }).send(res);
   };
-  accept_order = async (req, res) => {
-    const { orderId } = req.params;
+  accept_orders = async (req, res) => {
+    const { orderIds } = req.body;
+    console.log(orderIds);
+    const processedOrders = [];
+    const failedOrders = [];
 
-    const order = await Order.findById({ _id: orderId });
+    for (let i = 0; i < orderIds.length; i++) {
+      const orderId = orderIds[i];
 
-    if (!order) {
-      throw new BadRequestError("Đơn hàng không tồn tại");
-    }
+      try {
+        const order = await Order.findById({ _id: orderId });
 
-    if (order.orderStatus === "processing") {
-      throw new BadRequestError(
-        "Không thể chấp nhận đơn hàng đang ở trạng thái xử lý"
-      );
-    }
+        if (!order) {
+          failedOrders.push({ orderId, message: "Đơn hàng không tồn tại" });
+          continue;
+        }
 
-    let products = order.products;
-    const insufficientStockProducts = [];
+        if (order.orderStatus === "processing") {
+          failedOrders.push({
+            orderId,
+            message: "Không thể chấp nhận đơn hàng đang ở trạng thái xử lý",
+          });
+          continue;
+        }
 
-    for (let i = 0; i < products.length; i++) {
-      const productId = products[i]._id;
-      const quantityOrdered = products[i].quantity;
+        let products = order.products;
+        const insufficientStockProducts = [];
 
-      const product = await Product.findById(productId);
+        for (let j = 0; j < products.length; j++) {
+          const productId = products[j]._id;
+          const quantityOrdered = products[j].quantity;
 
-      if (!product) {
-        throw new BadRequestError(
-          `Sản phẩm không tồn tại với id: ${productId}`
-        );
-      }
+          const product = await Product.findById(productId);
 
-      if (product.stock < quantityOrdered) {
-        insufficientStockProducts.push(productId);
-      }
-    }
+          if (!product) {
+            failedOrders.push({
+              orderId,
+              message: `Sản phẩm không tồn tại với id: ${productId}`,
+            });
+            continue;
+          }
 
-    if (insufficientStockProducts.length > 0) {
-      if (products.length === 1) {
-        await Order.findByIdAndDelete(orderId);
-        return new SuccessResponse({
-          message: "Đơn hàng đã bị xóa do thiếu hàng",
-        }).send(res);
-      } else {
-        products = products.filter(
-          (product) => !insufficientStockProducts.includes(product._id)
-        );
-        await Order.findByIdAndUpdate(
+          if (product.stock < quantityOrdered) {
+            insufficientStockProducts.push(productId);
+          }
+        }
+
+        if (insufficientStockProducts.length > 0) {
+          if (products.length === 1) {
+            await Order.findByIdAndDelete(orderId);
+            failedOrders.push({
+              orderId,
+              message: "Đơn hàng đã bị xóa do thiếu hàng",
+            });
+            continue;
+          } else {
+            products = products.filter(
+              (product) => !insufficientStockProducts.includes(product._id)
+            );
+            await Order.findByIdAndUpdate(
+              { _id: orderId },
+              { products: products },
+              { new: true }
+            );
+          }
+        }
+
+        // Cập nhật tồn kho cho các sản phẩm
+        for (let j = 0; j < products.length; j++) {
+          const productId = products[j]._id;
+          const quantityOrdered = products[j].quantity;
+
+          await Product.findByIdAndUpdate(
+            productId,
+            { $inc: { stock: -quantityOrdered } },
+            { new: true }
+          );
+        }
+
+        // Cập nhật trạng thái đơn hàng
+        const processedOrder = await Order.findByIdAndUpdate(
           { _id: orderId },
-          { products: products },
+          { orderStatus: "processing" },
           { new: true }
         );
+
+        processedOrders.push(processedOrder);
+      } catch (error) {
+        failedOrders.push({ orderId, message: error.message });
       }
     }
 
-    for (let i = 0; i < products.length; i++) {
-      const productId = products[i]._id;
-      const quantityOrdered = products[i].quantity;
-
-      await Product.findByIdAndUpdate(
-        productId,
-        { $inc: { stock: -quantityOrdered } },
-        { new: true }
-      );
-    }
-
-    const processedOrder = await Order.findByIdAndUpdate(
-      { _id: orderId },
-      { orderStatus: "processing" },
-      { new: true }
-    );
-
     new SuccessResponse({
-      message:
-        "Đơn hàng đã được chấp nhận và tồn kho đã được cập nhật thành công",
+      message: "Quá trình chấp nhận đơn hàng hoàn tất",
+      data: {
+        processedOrders,
+        failedOrders,
+      },
     }).send(res);
   };
 }
