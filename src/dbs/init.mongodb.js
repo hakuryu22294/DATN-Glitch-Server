@@ -2,7 +2,7 @@ require("dotenv").config();
 const mongoose = require("mongoose");
 const { countConnect } = require("../helpers/check.connect");
 const { MONGO_URI, MONGODB_PASSWORD } = process.env;
-const connectString = `mongodb://localhost:27017/DATN`;
+const connectString = MONGO_URI.replace("<password>", MONGODB_PASSWORD);
 
 class Database {
   constructor() {
