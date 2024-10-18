@@ -60,17 +60,26 @@ orderRouter.get(
 orderRouter.post(
   "/admin/hand-over",
   authentication,
-  checkPermisson("admin"),
+  checkPermisson("seller"),
   asyncHandler(OrderController.hand_over_orders_to_shipper)
 );
 orderRouter.put(
   "/handle-cancel/:orderId",
+  authentication,
+  checkPermisson("user", "seller"),
   asyncHandler(OrderController.cancel_order)
 );
-orderRouter.post(
-  "/update-stock/:orderId",
-  asyncHandler(OrderController.update_stock_products_in_order)
+orderRouter.put(
+  "/handle-received/:orderId",
+  authentication,
+  checkPermisson("user", "seller"),
+  asyncHandler(OrderController.received_order)
 );
-orderRouter.put("/handle-accept", asyncHandler(OrderController.accept_orders));
+orderRouter.put(
+  "/handle-accept",
+  authentication,
+  checkPermisson("seller"),
+  asyncHandler(OrderController.accept_orders)
+);
 
 module.exports = orderRouter;

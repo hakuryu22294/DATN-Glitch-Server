@@ -15,6 +15,8 @@ const sendEmail = require("../utils/sendEmail");
 const {
   customerOrderConfirm,
   sellerOrderConfirm,
+  customerOrderAssigned,
+  shipperMessage,
 } = require("../utils/emailSubject");
 const { Seller } = require("../models/seller.schema");
 
@@ -76,24 +78,24 @@ class OrderController {
     }).send(res);
   };
 
-  update_stock_products_in_order = async (req, res) => {
-    const { orderId } = req.params;
+  // update_stock_products_in_order = async (req, res) => {
+  //   const { orderId } = req.params;
 
-    const order = await Order.findById(orderId);
-    for (let i = 0; i < order.products.length; i++) {
-      const product = await Product.findById(order.products[i]._id);
-      const newStock = product.stock - order.products[i].quantity;
-      const newSold = product.sold + order.products[i].quantity;
-      await Product.findByIdAndUpdate(order.products[i]._id, {
-        stock: newStock,
-        sold: newSold,
-      });
-    }
+  //   const order = await Order.findById(orderId);
+  //   for (let i = 0; i < order.products.length; i++) {
+  //     const product = await Product.findById(order.products[i]._id);
+  //     const newStock = product.stock - order.products[i].quantity;
+  //     const newSold = product.sold + order.products[i].quantity;
+  //     await Product.findByIdAndUpdate(order.products[i]._id, {
+  //       stock: newStock,
+  //       sold: newSold,
+  //     });
+  //   }
 
-    new SuccessResponse({
-      message: "Update stock products in order successfully",
-    }).send(res);
-  };
+  //   new SuccessResponse({
+  //     message: "Update stock products in order successfully",
+  //   }).send(res);
+  // };
 
   get_customer_dashboard = async (req, res) => {
     const { userId } = req.params;
@@ -161,31 +163,11 @@ class OrderController {
     }).send(res);
   };
   get_admin_orders = async (req, res) => {
-    let { page, searchValue, parPage, status } = req.query;
+    let { page, parPage, status } = req.query;
     page = parseInt(page) || 1;
     parPage = parseInt(parPage) || 10;
     const skipPage = parPage * (page - 1);
     let ordersQuery = {};
-
-    if (status) {
-      ordersQuery["orderStatus"] = status;
-      ordersQuery["deliveryStatus"] = "not_assigned";
-    }
-
-    if (searchValue) {
-      ordersQuery = {
-        $and: [
-          ordersQuery,
-          {
-            $or: [
-              { "products.name": { $regex: searchValue, $options: "i" } },
-              { "shopName": { $regex: searchValue, $options: "i" } },
-              { _id: { $regex: searchValue, $options: "i" } },
-            ],
-          },
-        ],
-      };
-    }
 
     const orders = await Order.aggregate([
       { $match: ordersQuery },
@@ -236,42 +218,38 @@ class OrderController {
     page = parseInt(page) || 1;
     parPage = parseInt(parPage) || 10;
     const skipPage = parPage * (page - 1);
-    const query = {};
-    let orders;
-    if (orderStatus) {
+    const query = { sellerId };
+    let orders = [];
+
+    if (orderStatus && orderStatus !== "all") {
       query.orderStatus = orderStatus;
     }
+
     if (searchValue) {
       orders = await Order.find({
-        sellerId: sellerId,
+        ...query,
         $or: [
-          { "products.name": { $regex: searchValue, $options: "i" } }, // Search by product name
-          { "shippingInfo.name": { $regex: searchValue, $options: "i" } }, // Search by customer name
+          { "products.name": { $regex: searchValue, $options: "i" } },
+          { "shippingInfo.name": { $regex: searchValue, $options: "i" } },
         ],
       })
         .sort({ createdAt: -1 })
         .skip(skipPage)
         .limit(parPage);
     } else {
-      orders = await Order.find({
-        sellerId: sellerId,
-        orderStatus,
-      })
+      orders = await Order.find(query)
         .sort({ createdAt: -1 })
         .skip(skipPage)
         .limit(parPage);
     }
-
     if (!orders) throw new BadRequestError("Orders not found");
-    const totalOrders = await Order.countDocuments({
-      sellerId: sellerId,
-    });
-
+    const totalOrders = await Order.countDocuments({ sellerId });
     new SuccessResponse({
       message: "Get orders successfully",
       data: { orders, totalOrders },
     }).send(res);
   };
+
   get_seller_order = async (req, res) => {
     const { orderId } = req.params;
     const order = await Order.findById(orderId);
@@ -318,7 +296,7 @@ class OrderController {
       });
     }
 
-    await sendEmail(
+    sendEmail(
       order.customerId.email,
       "Đơn hàng của bạn đã được đặt thành công!",
       customerOrderConfirm(order._id, order.customerId.name)
@@ -327,7 +305,7 @@ class OrderController {
       "path": "userId",
       select: "email",
     });
-    await sendEmail(
+    sendEmail(
       seller.userId.email,
       "Bạn có một đơn hàng mới!",
       sellerOrderConfirm(order._id, seller.shopInfo.shopName)
@@ -355,6 +333,18 @@ class OrderController {
     }).send(res);
   };
 
+  received_order = async (req, res) => {
+    const { orderId } = req.params;
+    const order = await Order.findByIdAndUpdate(orderId, {
+      orderStatus: "completed",
+    });
+    if (!order) throw new BadRequestError("Order not found");
+    new SuccessResponse({
+      message: "Get order details successfully",
+      data: order,
+    }).send(res);
+  };
+
   hand_over_orders_to_shipper = async (req, res) => {
     const { orderIds = [], shipperId } = req.body;
 
@@ -377,18 +367,46 @@ class OrderController {
       { _id: { $in: validOrderIds } },
       {
         deliveryStatus: "assigned",
-        orderStatus: "shipping",
+        orderStatus: "waiting_receive",
         shipperId: shipperId,
         assignedDate: Date.now(),
       }
     );
+    const ordersAssigned = await Order.find({
+      _id: { $in: validOrderIds },
+    })
+      .populate({ path: "customerId", select: "email name" })
+      .populate({ path: "shipperId", select: "email name" })
+      .populate({ path: "sellerId", select: "shopInfo" });
 
     if (updatedOrders.modifiedCount === 0) {
       throw new BadRequestError("Không có đơn hàng nào được cập nhật");
     }
 
+    if (ordersAssigned.length > 0) {
+      const { sellerId } = ordersAssigned[0];
+      for (const order of ordersAssigned) {
+        sendEmail(
+          order.customerId.email,
+          "Đơn hàng đã được cung cấp cho shipper",
+          customerOrderAssigned(order._id, order.customerId.name)
+        );
+      }
+      const shipper = await Shipper.findById(shipperId);
+      sendEmail(
+        shipper.email,
+        "Đơn hàng đã được cung cấp cho shipper",
+        shipperMessage(
+          shipper.name,
+          ordersAssigned.length,
+          sellerId.shopInfo.shopName
+        )
+      );
+    }
+
     new SuccessResponse({
       message: "Đơn hàng đã được giao thành công cho shipper",
+      data: ordersAssigned,
     }).send(res);
   };
 
@@ -445,7 +463,6 @@ class OrderController {
   };
   accept_orders = async (req, res) => {
     const { orderIds } = req.body;
-    console.log(orderIds);
     const processedOrders = [];
     const failedOrders = [];
 
@@ -491,14 +508,24 @@ class OrderController {
         }
 
         if (insufficientStockProducts.length > 0) {
+          // Nếu tất cả sản phẩm bị hết hàng, xóa đơn hàng và gửi email thông báo hủy đơn
           if (products.length === 1) {
             await Order.findByIdAndDelete(orderId);
+
             failedOrders.push({
               orderId,
               message: "Đơn hàng đã bị xóa do thiếu hàng",
             });
+
+            // Gửi email thông báo hủy đơn
+            await sendEmail(
+              order.customerId.email,
+              "Đơn hàng của bạn đã bị hủy",
+              orderCancelled(orderId)
+            );
             continue;
           } else {
+            // Nếu một số sản phẩm bị hết hàng, xóa sản phẩm khỏi đơn hàng và gửi email thông báo
             products = products.filter(
               (product) => !insufficientStockProducts.includes(product._id)
             );
@@ -507,22 +534,32 @@ class OrderController {
               { products: products },
               { new: true }
             );
+
+            // Gửi email thông báo xóa sản phẩm khỏi đơn hàng
+            await sendEmail(
+              order.customerId.email,
+              "Một số sản phẩm trong đơn hàng đã bị xóa",
+              productRemoved(orderId, insufficientStockProducts)
+            );
           }
         }
 
-        // Cập nhật tồn kho cho các sản phẩm
         for (let j = 0; j < products.length; j++) {
           const productId = products[j]._id;
           const quantityOrdered = products[j].quantity;
 
-          await Product.findByIdAndUpdate(
-            productId,
-            { $inc: { stock: -quantityOrdered } },
-            { new: true }
-          );
+          const product = await Product.findById(productId);
+
+          // Trừ số lượng sản phẩm trong kho
+          if (product && product.stock >= quantityOrdered) {
+            await Product.findByIdAndUpdate(
+              productId,
+              { $inc: { stock: -quantityOrdered } },
+              { new: true }
+            );
+          }
         }
 
-        // Cập nhật trạng thái đơn hàng
         const processedOrder = await Order.findByIdAndUpdate(
           { _id: orderId },
           { orderStatus: "processing" },

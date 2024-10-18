@@ -61,6 +61,8 @@ class PaymentController {
       data: transaction,
     }).send(res);
   };
+
+  
 }
 
 module.exports = new PaymentController();

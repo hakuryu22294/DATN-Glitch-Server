@@ -27,5 +27,9 @@ homeRouter.get(
   "/shop-page/get-data/:sellerId",
   asyncHandler(HomeController.get_shop_data)
 );
+homeRouter.get(
+  "/customer-wallet/:customerId",
+  asyncHandler(HomeController.total_customer_wallet)
+);
 
 module.exports = homeRouter;

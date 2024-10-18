@@ -8,6 +8,8 @@ const { Review } = require("../models/review.schema");
 const moment = require("moment");
 const { BadRequestError } = require("../core/error.response");
 const { Seller } = require("../models/seller.schema");
+const { Order } = require("../models/order.schema");
+const { CustomerWallet } = require("../models/customerWallet");
 
 class HomeController {
   formateProduct = (products) => {
@@ -154,26 +156,60 @@ class HomeController {
     }).send(res);
   };
   submit_review = async (req, res) => {
-    const { productId, rating, review, name } = req.body;
+    const { productId, rating, review, name, orderId, customerId } = req.body;
+    const order = await Order.findOne({ _id: orderId, customerId });
+    if (!order) {
+      throw new BadRequestError(
+        "Bạn không có quyền đánh giá sản phẩm này."
+      ).send(res);
+    }
+
+    // Kiểm tra xem sản phẩm có trong đơn hàng không
+    const purchasedProduct = order.products.find(
+      (product) => product._id.toString() === productId.toString()
+    );
+    if (!purchasedProduct) {
+      throw new BadRequestError("Sản phẩm này không có trong đơn hàng.").send(
+        res
+      );
+    }
+
+    // Bước 2: Kiểm tra xem người dùng đã đánh giá sản phẩm này trong đơn hàng chưa
+    const existingReview = await Review.findOne({
+      customerId,
+      productId,
+      orderId,
+    });
+    if (existingReview) {
+      throw new BadRequestError(
+        "Bạn đã đánh giá sản phẩm này trong đơn hàng rồi."
+      );
+    }
+
+    // Bước 3: Tạo đánh giá mới
     await Review.create({
       productId,
       rating,
       review,
       name,
+      orderId,
+      customerId,
       date: moment(Date.now()).format("LL"),
     });
+
     let rate = 0;
     const reviews = await Review.find({ productId });
     for (let i = 0; i < reviews.length; i++) {
       rate += reviews[i].rating;
     }
+
     let productRating = 0;
     if (reviews.length > 0) productRating = (rate / reviews.length).toFixed(1);
+
     await Product.findOneAndUpdate(
       { _id: productId },
       { rating: productRating }
     );
-
     new SuccessResponse({
       message: "Submit review successfully",
     }).send(res);
@@ -242,6 +278,10 @@ class HomeController {
     const getAll = await Review.find({ productId: productId });
 
     const reviews = await Review.find({ productId: productId })
+      .populate({
+        path: "customerId",
+        select: "name",
+      })
       .sort({ date: -1 })
       .skip(skipPage)
       .limit(limit);
@@ -275,7 +315,7 @@ class HomeController {
     }
 
     // Tính toán shopRating
-    const products = await Product.find({ sellerId });
+    const products = await Product.find({ sellerId, status: "published" });
     const ratings = products.map((product) => product.rating);
     const shopRating =
       ratings.length > 0
@@ -316,13 +356,32 @@ class HomeController {
       acc[key].push(product);
       return acc;
     }, {});
-
+    const allProducts = await Product.find({ sellerId, status: "published" });
     new SuccessResponse({
       message: "Get shop data successfully",
       data: {
         shop,
         products: groupedProducts,
         totalProducts,
+        allProducts,
+      },
+    }).send(res);
+  };
+  total_customer_wallet = async (req, res) => {
+    const { customerId } = req.params;
+    console.log(customerId);
+    const wallets = await CustomerWallet.find({ customerId });
+
+    // Tính tổng số tiền
+    const totalAmount = wallets.reduce(
+      (total, wallet) => total + wallet.amount,
+      0
+    );
+
+    new SuccessResponse({
+      message: "Get total customer wallet successfully",
+      data: {
+        totalAmount,
       },
     }).send(res);
   };

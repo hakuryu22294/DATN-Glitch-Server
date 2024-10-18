@@ -13,6 +13,9 @@ const moment = require("moment");
 const { Types } = require("mongoose");
 const { PlatformWallet } = require("../models/platformWallet");
 const { Product } = require("../models/product.schema");
+const sendEmail = require("../utils/sendEmail");
+const { customerReceived, sellerReceived } = require("../utils/emailSubject");
+const { Seller } = require("../models/seller.schema");
 
 class ShipperController {
   create_shipper = async (req, res) => {
@@ -95,8 +98,18 @@ class ShipperController {
   };
 
   get_all_shippers = async (req, res) => {
-    const shippers = await Shipper.find();
-    if (!shippers) throw new BadRequestError("Shippers don't exists");
+    const { shopAddress } = req.query;
+    let shippers = [];
+
+    if (shopAddress) {
+      const regex = new RegExp(shopAddress, "i");
+      shippers = await Shipper.find({ address: regex, status: "active" });
+    } else {
+      shippers = await Shipper.find();
+    }
+
+    if (!shippers.length) throw new BadRequestError("No shippers found");
+
     new SuccessResponse({
       message: "Get all shippers successfully",
       data: shippers,
@@ -105,19 +118,11 @@ class ShipperController {
 
   get_all_orders = async (req, res) => {
     const { shipperId } = req.params;
-    const { deliveryStatus, date } = req.query;
-
-    const startDate = date ? new Date(date) : new Date();
-    const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + 1);
+    const { deliveryStatus } = req.query;
 
     const orders = await Order.find({
       shipperId,
       deliveryStatus,
-      assignedDate: {
-        $gte: startDate,
-        $lt: endDate,
-      },
     })
       .populate({ path: "customerId", select: "-password" })
       .populate({ path: "sellerId", select: "-password" });
@@ -162,63 +167,88 @@ class ShipperController {
       { _id: orderId },
       { ...updateStatus[status] },
       { new: true }
-    );
+    )
+      .populate({ path: "customerId", select: "email name" })
+      .populate({
+        path: "sellerId",
+        select: "shopInfo.shopName",
+      });
+    const seller = await Seller.findById(order.sellerId).populate({
+      path: "userId",
+      select: "email",
+    });
     if (!order) throw new BadRequestError("Order don't exists");
     const { totalPrice, sellerId, shipperId, customerId, products } = order;
     console.log(products);
     if (status === "delivered") {
       for (let product of products) {
-        console.log(product);
         await Product.findByIdAndUpdate(product._id, {
           $inc: { sold: product.quantity },
         });
       }
-      if (status === "delivered") {
-        await ShopWallet.create({
-          sellerId: sellerId,
-          amount: totalPrice - totalPrice * 0.1 - 20000,
-          month: moment().format("M"),
-          year: moment().format("YYYY"),
-          day: moment().format("D"),
-        });
-        await ShipperWallet.create({
-          shipperId: order.shipperId,
-          amount: 5000,
-          month: moment().format("M"),
-          year: moment().format("YYYY"),
-          day: moment().format("D"),
-        });
-        await PlatformWallet.create({
-          sellerId: sellerId,
-          amount: totalPrice * 0.1,
-          month: moment().format("M"),
-          year: moment().format("YYYY"),
-          day: moment().format("D"),
-        });
-      }
-      if (status === "cancelled" && order.paymentStatus === "paid") {
-        const refundAmount = order.totalPrice - 40000;
-        await ShopWallet.create({
-          sellerId: order.sellerId,
-          amount: -refundAmount,
-          month: moment().format("M"),
-          year: moment().format("YYYY"),
-          day: moment().format("D"),
-        });
-        await CustomerWallet.create({
-          customerId: order.customerId,
-          amount: refundAmount,
-          month: moment().format("M"),
-          year: moment().format("YYYY"),
-          day: moment().format("D"),
-        });
-      }
-      new SuccessResponse({
-        message: "Update delivery status successfully",
-        data: order,
-      }).send(res);
+
+      await ShopWallet.create({
+        sellerId: sellerId,
+        amount: totalPrice - totalPrice * 0.1 - 20000,
+        month: moment().format("M"),
+        year: moment().format("YYYY"),
+        day: moment().format("D"),
+      });
+      await ShipperWallet.create({
+        shipperId: order.shipperId,
+        amount: 5000,
+        month: moment().format("M"),
+        year: moment().format("YYYY"),
+        day: moment().format("D"),
+      });
+      await PlatformWallet.create({
+        sellerId: sellerId,
+        amount: totalPrice * 0.1,
+        month: moment().format("M"),
+        year: moment().format("YYYY"),
+        day: moment().format("D"),
+      });
+      sendEmail(
+        order.customerId.email,
+        "Đơn hàng của bạn đã được giao thành công",
+        customerReceived(order._id, order.customerId.name)
+      );
+      sendEmail(
+        seller.userId.email,
+        "Đơn hàng của bạn đã đến tay khách hàng",
+        sellerReceived(order._id, order.sellerId.shopName)
+      );
     }
+    if (status === "cancelled" && order.paymentStatus === "paid") {
+      const refundAmount = order.totalPrice - 40000;
+      await ShopWallet.create({
+        sellerId: order.sellerId,
+        amount: -(order.totalPrice * 0.9) + 20000,
+        month: moment().format("M"),
+        year: moment().format("YYYY"),
+        day: moment().format("D"),
+      });
+      await CustomerWallet.create({
+        customerId: order.customerId,
+        amount: refundAmount,
+        month: moment().format("M"),
+        year: moment().format("YYYY"),
+        day: moment().format("D"),
+      });
+      await PlatformWallet.create({
+        sellerId: order.sellerId,
+        amount: -(order.totalPrice * 0.1) + 20000,
+        month: moment().format("M"),
+        year: moment().format("YYYY"),
+        day: moment().format("D"),
+      });
+    }
+    new SuccessResponse({
+      message: "Update delivery status successfully",
+      data: order,
+    }).send(res);
   };
+
   get_shipper_info = async (req, res) => {
     const { id } = req.user;
     const shipper = await Shipper.findById({ _id: id });

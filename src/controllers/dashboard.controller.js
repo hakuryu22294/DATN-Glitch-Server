@@ -158,7 +158,10 @@ class DashBoardController {
         $gte: selectedDate.startOf("day").toDate(),
         $lte: selectedDate.endOf("day").toDate(),
       },
-    }).limit(5);
+    })
+      .populate({ path: "customerId", select: "name email" })
+      .limit(5)
+      .sort({ createdAt: -1 });
 
     // Tính toán doanh thu theo ngày
     const revenue = await Order.aggregate([

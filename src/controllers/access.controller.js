@@ -43,16 +43,16 @@ class AccessController {
       shopInfo,
     });
     if (!createSeller) throw new BadRequestError("Seller don't created");
-    await Customer.findByIdAndUpdate(
+    const updateRole = await Customer.findByIdAndUpdate(
       { _id: userId },
       { role: "seller" },
       { new: true }
-    );
-    if (createSeller) {
+    ).populate({ path: "userId", select: "email" });
+    if (updateRole) {
       await sendEmail(
         "admin@gmail.com",
         "Cửa hàng đăng ký mới",
-        `Bạn nhận được một yêu cầu active cửa hàng từ ${createSeller.email}, vui lòng vào trang quản trị để active cửa hàng`
+        `Bạn nhận được một yêu cầu active cửa hàng từ ${updateRole.email}, vui lòng vào trang quản trị để active cửa hàng`
       );
     }
     new SuccessResponse({

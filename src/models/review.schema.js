@@ -9,10 +9,16 @@ const reviewSchema = new Schema(
       required: true,
       ref: "Product",
     },
-    name: {
-      type: String,
+    customerId: {
+      type: Schema.Types.ObjectId,
       required: true,
+      ref: "Customer",
     },
+    orderId: {
+      type: Schema.Types.ObjectId,
+      ref: "Order",
+    },
+
     rating: {
       type: Number,
       required: true,
@@ -33,6 +39,8 @@ const reviewSchema = new Schema(
     collection: COLLECTION_NAME,
   }
 );
+
+reviewSchema.index({ userId: 1, productId: 1, orderId: 1 }, { unique: true });
 
 module.exports = {
   Review: model(DOCUMENT_NAME, reviewSchema),

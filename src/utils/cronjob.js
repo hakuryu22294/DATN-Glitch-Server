@@ -11,7 +11,7 @@ const cronScheduleOrder = () => {
 
       const ordersToUpdate = await Order.find({
         deliveryStatus: "delivered",
-        orderStatus: { $ne: "completed" },
+        orderStatus: "waiting_receive",
         completeDeliveryDate: { $lte: threeDaysAgo },
       }).populate({ path: "customerId", select: "email" });
 

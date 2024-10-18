@@ -11,7 +11,7 @@ shipperRouter.get(
 shipperRouter.get(
   "/",
   authentication,
-  checkPermisson("admin"),
+  checkPermisson("admin", "seller"),
   asyncHandler(ShipperController.get_all_shippers)
 );
 shipperRouter.post("/login", asyncHandler(ShipperController.login_shipper));
