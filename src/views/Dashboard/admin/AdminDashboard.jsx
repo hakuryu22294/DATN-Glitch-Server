@@ -152,10 +152,9 @@ const AdminDashboard = () => {
                     </p>
                   </div>
                 </div>
-                {/* Nếu là tab topRevenue thì hiển thị totalRevenue */}
               </div>
             </div>
-            {/* Hiển thị thông tin khác nhau tùy theo tab */}
+
             <span className="font-medium text-primary">
               {activeTab === 0 ? (
                 <span className="flex items-center gap-2">
