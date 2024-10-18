@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const instanceApi = axios.create({
-  baseURL: "http://localhost:8000/api/v1",
+  baseURL: "https://datn-glitch-server-1.onrender.com/",
   withCredentials: true,
 });
 
